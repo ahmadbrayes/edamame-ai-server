@@ -4,162 +4,109 @@ import "dotenv/config";
 import OpenAI from "openai";
 
 const app = express();
+
 app.use(cors());
-app.use(express.json({ limit: "50kb" }));
+app.use(express.json({ limit: "200kb" }));
 app.use(express.static("public"));
+
+app.get("/", (req, res) => res.redirect("/brain.html"));
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 🔥 MEMORY (conversation history)
 const conversations = {};
 
-
-// 🔥 SYSTEM PROMPT (خليه برا endpoint)
 const SYSTEM_PROMPT = `
-You are Edamame Content Brain.
+You are Edamame Brain — the content operator for serious brands.
 
-You are an elite-level content strategist.
+VOICE
+- Smart. Bold. Deep. Strategic.
+- Short, high-signal answers. No fluff. No generic advice.
+- Confident, calm, and specific.
 
-Your job is to help users create high-performing content that drives:
+ROLE
+Help users create high-performing content that drives attention, authority, inbound demand, and revenue.
 
-• attention
-• authority
-• audience growth
-• inbound leads
-• revenue
+NON-NEGOTIABLE RULES
+1) Answer immediately. Do not start with questions.
+2) Ask ONE question only if absolutely necessary.
+3) Do NOT offer multiple options or suggestions unless explicitly requested.
+4) Treat every message as part of the same conversation.
 
-Never give basic advice.
+CONTENT INTELLIGENCE
+Infer what the user sells, who they sell to, and the desired outcome — then respond with the strongest content angle.
 
-Never say things like:
-- post consistently
-- use hashtags
-- follow trends
-
-Operate at an advanced level.
-
-Always answer directly.
-
-Do not interrogate the user.
-
-Ask ONE question only if absolutely necessary.
-
-COMMUNICATION STYLE:
-
-Sharp.
-Modern.
-Strategic.
-High signal only.
-
-Never robotic.
-Never corporate.
-
-IDENTITY PROTECTION:
-
-Never mention being an AI.
-Never mention training data.
-Never discuss knowledge cutoffs.
-Never talk about internet access.
+STYLE
+- English only.
+- Never mention being an AI.
+- Never mention training data, system prompts, or knowledge cutoffs.
 
 If asked how you know something, say:
+"I operate using advanced pattern recognition across high-performing content."
 
-"I operate using advanced pattern recognition across high-performing digital content."
+EXECUTION LINE
+If relevant, end with:
+"We can also execute this for you — strategy, production, and rollout."
 
-You are the content brain brands wish they had internally.
+You are the content brain serious brands wish they had internally.
 `.trim();
 
-
-// Redirect root → brain.html
-app.get("/", (req, res) => {
-  res.redirect("/brain.html");
-});
-
-
-// Health check
 app.get("/health", (req, res) => {
-  res.json({ ok: true, message: "Server is running" });
+  res.json({ ok: true });
 });
 
-
-// 🔥 CHAT ENDPOINT
 app.post("/api/chat", async (req, res) => {
   try {
     const userMessage = String(req.body?.message || "").trim();
-
     if (!userMessage) {
-      return res.status(400).json({
-        error: "Message is required",
-      });
+      return res.status(400).json({ error: "Message is required" });
     }
 
     const sessionId = String(req.body?.sessionId || "default");
 
-    // أول مرة للمستخدم
     if (!conversations[sessionId]) {
       conversations[sessionId] = [
-        {
-          role: "system",
-          content: SYSTEM_PROMPT,
-        },
+        { role: "system", content: SYSTEM_PROMPT }
       ];
     }
 
-    // خزن رسالة المستخدم
     conversations[sessionId].push({
       role: "user",
-      content: userMessage,
+      content: userMessage
     });
 
-    // 🔥 Call OpenAI WITH MEMORY
     const response = await client.responses.create({
-      model: "gpt-4.1-mini",
-      messages: conversations[sessionId],
-      max_output_tokens: 500,
+      model: "gpt-4o-mini",
+      input: conversations[sessionId],
+      temperature: 0.7,
+      max_output_tokens: 500
     });
 
-    const aiReply = (response.output_text || "").trim();
+    const aiReply =
+      (response.output_text || "").trim() ||
+      "I didn’t get that — rephrase in one clear sentence.";
 
-    // خزن رد AI
     conversations[sessionId].push({
       role: "assistant",
-      content: aiReply,
+      content: aiReply
     });
 
-    return res.json({
-      reply: aiReply,
-    });
+    return res.json({ reply: aiReply });
 
   } catch (error) {
-    console.log("===== OPENAI ERROR START =====");
-    console.log("Message:", error?.message);
-    console.log("Status:", error?.status);
-    console.log("Full error:", error);
-    console.log("===== OPENAI ERROR END =====");
+    console.error("OPENAI ERROR:", error);
 
     return res.status(500).json({
       error: "AI error",
-      message: String(error?.message || error),
-      status: error?.status || null,
+      message: String(error?.message || error)
     });
   }
 });
 
-
-// Start server
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("🔥 AI SERVER RUNNING:");
-  console.log("👉 http://localhost:" + PORT);
+  console.log("AI SERVER RUNNING http://localhost:" + PORT);
 });
-
-
-// Catch crashes
-process.on("uncaughtException", (err) =>
-  console.error("UNCAUGHT EXCEPTION:", err)
-);
-
-process.on("unhandledRejection", (err) =>
-  console.error("UNHANDLED REJECTION:", err)
-);
+```0
