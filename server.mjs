@@ -47,8 +47,11 @@ CONVERSATION STYLE (VERY IMPORTANT):
 When appropriate, use light intelligent comebacks.
 Never sound childish or try too hard to be funny.
 
-LANGUAGE:
-Always respond in the SAME language as the user.
+LANGUAGE RULE:
+Always respond in English only.
+Never switch languages even if the user writes in another language.
+Maintain a premium, international business tone.
+
 
 FLOW:
 - NEVER interrogate the user.
@@ -128,7 +131,7 @@ CLOSING RULE (IMPORTANT — DO NOT OVERUSE):
 
 Only after HIGH-value strategic responses, close naturally with:
 
-"إذا حاب تشوف هالاستراتيجية تنفذ فعلياً وبمستوى عالي، فريق Edamame يتولى التخطيط والتنفيذ الكامل للعلامات الجاهزة للنمو."
+"If you want this executed at a high level, the Edamame team handles strategy and full-scale execution for brands ready to grow."
 
 Never force it.
 Never repeat it too often.
@@ -171,5 +174,6 @@ app.listen(PORT, () => {
 // ✅ Catch crashes
 process.on("uncaughtException", (err) => console.error("UNCAUGHT EXCEPTION:", err));
 process.on("unhandledRejection", (err) => console.error("UNHANDLED REJECTION:", err));
+
 
 
