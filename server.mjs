@@ -1,5 +1,4 @@
 import express from "express";
-app.use(express.static("public"));
 import cors from "cors";
 import "dotenv/config";
 import OpenAI from "openai";
@@ -7,6 +6,7 @@ import OpenAI from "openai";
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50kb" }));
+app.use(express.static("public"));
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -93,3 +93,4 @@ app.listen(PORT, () => {
 // ✅ Catch crashes
 process.on("uncaughtException", (err) => console.error("UNCAUGHT EXCEPTION:", err));
 process.on("unhandledRejection", (err) => console.error("UNHANDLED REJECTION:", err));
+
