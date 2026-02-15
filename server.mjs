@@ -7,6 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50kb" }));
 app.use(express.static("public"));
+app.get("/", (req, res) => {
+  res.redirect("/brain.html");
+});
+
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -86,6 +90,7 @@ app.listen(PORT, () => {
 // ✅ Catch crashes
 process.on("uncaughtException", (err) => console.error("UNCAUGHT EXCEPTION:", err));
 process.on("unhandledRejection", (err) => console.error("UNHANDLED REJECTION:", err));
+
 
 
 
