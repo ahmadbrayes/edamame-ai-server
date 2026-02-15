@@ -4,62 +4,191 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Edamame Brain</title>
+
   <style>
-    :root{
-      --bg:#f6f9fc; --card:#ffffff; --text:#0a2540; --muted:#425466;
-      --line:rgba(10,37,64,.12);
-      --shadow:0 10px 30px rgba(50,50,93,.08), 0 2px 6px rgba(0,0,0,.06);
-      --radius:16px; --primary:#635bff;
-    }
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: radial-gradient(900px 500px at 20% 0%, rgba(99,91,255,.12), transparent 60%),
-                  radial-gradient(900px 500px at 80% 0%, rgba(0,163,255,.10), transparent 55%),
-                  var(--bg);
-      color:var(--text);
-    }
-    .wrap{ max-width:980px; margin:0 auto; height:100vh; display:flex; flex-direction:column; padding:18px; box-sizing:border-box; }
-    header{
-      background: rgba(255,255,255,.75);
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 14px 16px;
-      display:flex; align-items:center; gap:10px;
-      backdrop-filter: blur(10px);
-    }
-    header b{ font-size:16px; letter-spacing:.2px; }
-    header span{ color:var(--muted); font-size:12.5px; }
-    .chat{
-      flex:1; overflow:auto; margin-top:14px;
-      background:var(--card); border:1px solid var(--line);
-      border-radius:var(--radius); box-shadow:var(--shadow);
-      padding:18px; display:flex; flex-direction:column; gap:12px;
-    }
-    .msg{ max-width:78%; padding:12px 14px; border-radius:14px; line-height:1.6; font-size:14px; white-space:pre-wrap; }
-    .me{ align-self:flex-end; background: rgba(99,91,255,.10); border:1px solid rgba(99,91,255,.25); color:var(--text); }
-    .ai{ align-self:flex-start; background:#f7fafc; border:1px solid rgba(10,37,64,.10); color:var(--text); }
-    .bar{
-      margin-top:14px; background:var(--card); border:1px solid var(--line);
-      border-radius:var(--radius); box-shadow:var(--shadow);
-      padding:12px; display:flex; gap:10px; align-items:flex-end;
-    }
-    textarea{
-      flex:1; resize:none; height:56px; border-radius:14px;
-      border:1px solid rgba(10,37,64,.14); background:#fff; color:var(--text);
-      padding:12px; font-size:14px; outline:none;
-    }
-    textarea:focus{ border-color: rgba(99,91,255,.55); box-shadow: 0 0 0 4px rgba(99,91,255,.14); }
-    button{
-      width:132px; height:56px; border-radius:14px; border:0;
-      background:var(--primary); color:#fff; font-weight:650; cursor:pointer;
-      transition: transform .12s ease, opacity .12s ease;
-      box-shadow: 0 12px 24px rgba(99,91,255,.20);
-    }
-    button:hover{ transform: translateY(-1px); }
-    button:disabled{ opacity:.6; cursor:not-allowed; box-shadow:none; transform:none; }
-  </style>
+
+:root{
+  --bg:#efe1cf;                 /* beige */
+  --card:#ffffff;
+  --text:#2b2b2b;
+  --muted:#6b6b6b;
+
+  --primary:#8db600;           /* edamame green */
+  --secondary:#a79ad6;         /* lavender */
+
+  --line:rgba(0,0,0,.08);
+  --radius:18px;
+  --shadow:0 10px 30px rgba(0,0,0,.06);
+}
+
+/* ===== BODY ===== */
+
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background: var(--bg);
+  color:var(--text);
+}
+
+
+/* ===== WRAP ===== */
+
+.wrap{
+  max-width:1200px;   /* wider = more premium */
+  margin:auto;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  padding:20px;
+  box-sizing:border-box;
+}
+
+
+/* ===== HEADER ===== */
+
+header{
+  background: rgba(255,255,255,.65);
+  backdrop-filter: blur(14px);
+  border:1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding:16px 18px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+header b{
+  color:var(--primary);
+  font-size:18px;
+  letter-spacing:.3px;
+}
+
+header span{
+  color:var(--muted);
+  font-size:13px;
+}
+
+
+/* ===== CHAT BOX ===== */
+
+.chat{
+  flex:1;
+  overflow:auto;
+  margin-top:16px;
+  background:var(--card);
+  border-radius: var(--radius);
+  border:1px solid var(--line);
+  box-shadow: var(--shadow);
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+
+/* ===== MESSAGES ===== */
+
+.msg{
+  max-width:72%;
+  padding:14px 16px;
+  border-radius:16px;
+  line-height:1.6;
+  font-size:14.5px;
+  white-space: pre-wrap;
+}
+
+
+/* USER */
+
+.me{
+  align-self:flex-end;
+  background: rgba(141,182,0,.12);
+  border:1px solid rgba(141,182,0,.35);
+}
+
+
+/* AI */
+
+.ai{
+  align-self:flex-start;
+  background:#ffffff;
+  border:1px solid rgba(0,0,0,.07);
+}
+
+
+/* ===== INPUT BAR ===== */
+
+.bar{
+  margin-top:16px;
+  background:var(--card);
+  border-radius: var(--radius);
+  border:1px solid var(--line);
+  box-shadow: var(--shadow);
+  padding:12px;
+  display:flex;
+  gap:12px;
+  align-items:flex-end;
+}
+
+
+/* ===== TEXTAREA ===== */
+
+textarea{
+  flex:1;
+  resize:none;
+  height:60px;
+  border-radius:16px;
+  border:1px solid rgba(0,0,0,.12);
+  background:#fff;
+  color:var(--text);
+  padding:14px;
+  font-size:14.5px;
+  outline:none;
+}
+
+textarea:focus{
+  border-color: var(--primary);
+  box-shadow:0 0 0 4px rgba(141,182,0,.15);
+}
+
+
+/* ===== BUTTON ===== */
+
+button{
+  width:140px;
+  height:60px;
+  border-radius:16px;
+  border:0;
+  cursor:pointer;
+  color:#fff;
+  font-weight:600;
+  font-size:15px;
+
+  background: linear-gradient(
+    135deg,
+    #8db600,
+    #a79ad6
+  );
+
+  box-shadow:0 10px 25px rgba(0,0,0,.12);
+  transition:.18s;
+}
+
+button:hover{
+  transform:translateY(-2px);
+}
+
+button:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
+
+</style>
+
+
 </head>
 <body>
   <div class="wrap">
