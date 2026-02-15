@@ -5,20 +5,142 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Edamame Brain</title>
   <style>
-    body{margin:0;font-family:system-ui;background:#0b0b0f;color:#fff}
-    .wrap{max-width:980px;margin:0 auto;height:100vh;display:flex;flex-direction:column}
-    header{padding:16px 18px;border-bottom:1px solid #222;display:flex;align-items:center;gap:10px}
-    header b{font-size:18px}
-    header span{opacity:.7;font-size:12px}
-    .chat{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
-    .msg{max-width:82%;padding:12px 14px;border-radius:14px;line-height:1.6;white-space:pre-wrap}
-    .me{align-self:flex-start;background:#1c1c26;border:1px solid #2b2b36}
-    .ai{align-self:flex-end;background:#0f2a1b;border:1px solid #1f5a3a}
-    .bar{display:flex;gap:10px;padding:14px;border-top:1px solid #222}
-    textarea{flex:1;resize:none;height:54px;border-radius:12px;border:1px solid #2b2b36;background:#111118;color:#fff;padding:10px 12px;outline:none}
-    button{width:120px;border-radius:12px;border:none;background:#5b5bff;color:#fff;font-weight:700;cursor:pointer}
-    button:disabled{opacity:.5;cursor:not-allowed}
-  </style>
+  :root{
+    --bg:#f6f9fc;
+    --card:#ffffff;
+    --text:#0a2540;
+    --muted:#425466;
+    --line:rgba(10,37,64,.12);
+    --shadow:0 10px 30px rgba(50,50,93,.08), 0 2px 6px rgba(0,0,0,.06);
+    --radius:16px;
+    --primary:#635bff; /* Stripe-ish purple */
+  }
+
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    background: radial-gradient(900px 500px at 20% 0%, rgba(99,91,255,.12), transparent 60%),
+                radial-gradient(900px 500px at 80% 0%, rgba(0,163,255,.10), transparent 55%),
+                var(--bg);
+    color:var(--text);
+  }
+
+  .wrap{
+    max-width: 980px;
+    margin: 0 auto;
+    height: 100vh;
+    display:flex;
+    flex-direction:column;
+    padding: 18px;
+    box-sizing:border-box;
+  }
+
+  header{
+    background: rgba(255,255,255,.75);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    backdrop-filter: blur(10px);
+  }
+
+  header b{
+    font-size: 16px;
+    letter-spacing: .2px;
+  }
+
+  header span{
+    color:var(--muted);
+    font-size: 12.5px;
+  }
+
+  .chat{
+    flex:1;
+    overflow:auto;
+    margin-top: 14px;
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+  }
+
+  .msg{
+    max-width: 78%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    line-height: 1.6;
+    font-size: 14px;
+    white-space: pre-wrap;
+  }
+
+  /* User bubble */
+  .me{
+    align-self:flex-end;
+    background: rgba(99,91,255,.10);
+    border:1px solid rgba(99,91,255,.25);
+    color: var(--text);
+  }
+
+  /* AI bubble */
+  .ai{
+    align-self:flex-start;
+    background: #f7fafc;
+    border:1px solid rgba(10,37,64,.10);
+    color: var(--text);
+  }
+
+  .bar{
+    margin-top: 14px;
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 12px;
+    display:flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  textarea{
+    flex:1;
+    resize:none;
+    height: 56px;
+    border-radius: 14px;
+    border:1px solid rgba(10,37,64,.14);
+    background:#fff;
+    color: var(--text);
+    padding: 12px 12px;
+    font-size: 14px;
+    outline: none;
+  }
+  textarea:focus{
+    border-color: rgba(99,91,255,.55);
+    box-shadow: 0 0 0 4px rgba(99,91,255,.14);
+  }
+
+  button{
+    width: 132px;
+    height: 56px;
+    border-radius: 14px;
+    border:0;
+    background: var(--primary);
+    color:#fff;
+    font-weight: 650;
+    cursor:pointer;
+    transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+    box-shadow: 0 12px 24px rgba(99,91,255,.20);
+  }
+  button:hover{ transform: translateY(-1px); }
+  button:disabled{ opacity:.6; cursor:not-allowed; box-shadow:none; transform:none; }
+</style>
+
 </head>
 <body>
   <div class="wrap">
@@ -87,4 +209,5 @@
   </script>
 </body>
 </html>
+
 
