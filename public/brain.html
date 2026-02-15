@@ -1,17 +1,95 @@
-<script>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Edamame Brain</title>
+  <style>
+    :root{
+      --bg:#f6f9fc; --card:#ffffff; --text:#0a2540; --muted:#425466;
+      --line:rgba(10,37,64,.12);
+      --shadow:0 10px 30px rgba(50,50,93,.08), 0 2px 6px rgba(0,0,0,.06);
+      --radius:16px; --primary:#635bff;
+    }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(900px 500px at 20% 0%, rgba(99,91,255,.12), transparent 60%),
+                  radial-gradient(900px 500px at 80% 0%, rgba(0,163,255,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    .wrap{ max-width:980px; margin:0 auto; height:100vh; display:flex; flex-direction:column; padding:18px; box-sizing:border-box; }
+    header{
+      background: rgba(255,255,255,.75);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      display:flex; align-items:center; gap:10px;
+      backdrop-filter: blur(10px);
+    }
+    header b{ font-size:16px; letter-spacing:.2px; }
+    header span{ color:var(--muted); font-size:12.5px; }
+    .chat{
+      flex:1; overflow:auto; margin-top:14px;
+      background:var(--card); border:1px solid var(--line);
+      border-radius:var(--radius); box-shadow:var(--shadow);
+      padding:18px; display:flex; flex-direction:column; gap:12px;
+    }
+    .msg{ max-width:78%; padding:12px 14px; border-radius:14px; line-height:1.6; font-size:14px; white-space:pre-wrap; }
+    .me{ align-self:flex-end; background: rgba(99,91,255,.10); border:1px solid rgba(99,91,255,.25); color:var(--text); }
+    .ai{ align-self:flex-start; background:#f7fafc; border:1px solid rgba(10,37,64,.10); color:var(--text); }
+    .bar{
+      margin-top:14px; background:var(--card); border:1px solid var(--line);
+      border-radius:var(--radius); box-shadow:var(--shadow);
+      padding:12px; display:flex; gap:10px; align-items:flex-end;
+    }
+    textarea{
+      flex:1; resize:none; height:56px; border-radius:14px;
+      border:1px solid rgba(10,37,64,.14); background:#fff; color:var(--text);
+      padding:12px; font-size:14px; outline:none;
+    }
+    textarea:focus{ border-color: rgba(99,91,255,.55); box-shadow: 0 0 0 4px rgba(99,91,255,.14); }
+    button{
+      width:132px; height:56px; border-radius:14px; border:0;
+      background:var(--primary); color:#fff; font-weight:650; cursor:pointer;
+      transition: transform .12s ease, opacity .12s ease;
+      box-shadow: 0 12px 24px rgba(99,91,255,.20);
+    }
+    button:hover{ transform: translateY(-1px); }
+    button:disabled{ opacity:.6; cursor:not-allowed; box-shadow:none; transform:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <b>Edamame Brain</b>
+      <span>Smart. Bold. Deep strategy.</span>
+    </header>
 
+    <div id="chat" class="chat"></div>
+
+    <div class="bar">
+      <textarea id="input" placeholder="Type here..."></textarea>
+      <button id="send">Send</button>
+    </div>
+  </div>
+
+  <script>
     const chat = document.getElementById("chat");
     const input = document.getElementById("input");
     const send = document.getElementById("send");
 
-    // 🔥 SESSION ID (يتذكر المستخدم)
-    let sessionId = localStorage.getItem("sessionId");
-
-    if (!sessionId) {
-      sessionId = crypto.randomUUID();
-      localStorage.setItem("sessionId", sessionId);
+    function makeId() {
+      return "s_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2);
     }
 
+    let sessionId = localStorage.getItem("sessionId");
+    if (!sessionId) {
+      sessionId = makeId();
+      localStorage.setItem("sessionId", sessionId);
+    }
 
     function addMsg(text, cls){
       const d = document.createElement("div");
@@ -21,7 +99,6 @@
       chat.scrollTop = chat.scrollHeight;
       return d;
     }
-
 
     async function ask(){
       const text = input.value.trim();
@@ -34,20 +111,14 @@
       const waiting = addMsg("...", "ai");
 
       try{
-
         const r = await fetch("/api/chat", {
           method:"POST",
           headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ 
-            message: text,
-            sessionId: sessionId // 🔥 أهم سطر
-          })
+          body: JSON.stringify({ message: text, sessionId })
         });
 
         const data = await r.json();
-
         waiting.textContent = data.reply || "No response.";
-
       }catch(e){
         waiting.textContent = "Connection error. Try again.";
       }finally{
@@ -56,9 +127,7 @@
       }
     }
 
-
     send.addEventListener("click", ask);
-
     input.addEventListener("keydown", (e)=>{
       if(e.key === "Enter" && !e.shiftKey){
         e.preventDefault();
@@ -66,11 +135,7 @@
       }
     });
 
-
-    // First message
-    addMsg(
-      "Edamame Content Brain.\nTell me what you sell — and I’ll help you create content that actually drives attention.",
-      "ai"
-    );
-
-</script>
+    addMsg("Edamame Content Brain. Tell me what you sell — and I’ll help you create content that drives attention.", "ai");
+  </script>
+</body>
+</html>
