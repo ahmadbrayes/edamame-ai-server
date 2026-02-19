@@ -6,7 +6,7 @@ import OpenAI from "openai";
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "3mb" })); // بدنا نستقبل base64 للصورة
+app.use(express.json({ limit: "3mb" })); 
 app.use(express.static("public"));
 
 app.get("/", (req, res) => res.redirect("/brain.html"));
@@ -14,7 +14,7 @@ app.get("/", (req, res) => res.redirect("/brain.html"));
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const conversations = {};
-const productImageBySession = {}; // data URL للصورة
+const productImageBySession = {};
 const imageUsage = {}; // limit 2 images/session
 
 const SYSTEM_PROMPT = `
@@ -61,7 +61,7 @@ Guide the conversation like a strategist.
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
-// 1) Upload product image (as data URL)
+// 1) Upload product image
 app.post("/api/product", (req, res) => {
   try {
     const sessionId = String(req.body?.sessionId || "default");
@@ -75,7 +75,7 @@ app.post("/api/product", (req, res) => {
     }
 
     productImageBySession[sessionId] = dataUrl;
-    imageUsage[sessionId] = 0; // reset image limit لما يرفع منتج جديد
+    imageUsage[sessionId] = 0;
 
     return res.json({ ok: true });
   } catch (e) {
@@ -83,7 +83,7 @@ app.post("/api/product", (req, res) => {
   }
 });
 
-// 2) Chat (كما هو)
+// 2) Chat
 app.post("/api/chat", async (req, res) => {
   try {
     const userMessage = String(req.body?.message || "").trim();
@@ -117,7 +117,7 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-// 3) Generate image using the uploaded product image (limit 2/session)
+// 3) Image generation (limit 2 per session)
 app.post("/api/image", async (req, res) => {
   try {
     const sessionId = String(req.body?.sessionId || "default");
@@ -135,7 +135,6 @@ app.post("/api/image", async (req, res) => {
       });
     }
 
-    // limit 2 images per session
     if (!imageUsage[sessionId]) imageUsage[sessionId] = 0;
     if (imageUsage[sessionId] >= 2) {
       return res.status(403).json({
@@ -159,9 +158,8 @@ User request:
 ${userPrompt}
 `.trim();
 
-    // Use Responses + image_generation tool with an input image
     const r = await client.responses.create({
-      model: "gpt-40-mini",
+      model: "gpt-4o-mini",
       tools: [{ type: "image_generation" }],
       input: [
         {
