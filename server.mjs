@@ -161,7 +161,7 @@ ${userPrompt}
 
     // Use Responses + image_generation tool with an input image
     const r = await client.responses.create({
-      model: "gpt-4.1",
+      model: "gpt-40-mini",
       tools: [{ type: "image_generation" }],
       input: [
         {
