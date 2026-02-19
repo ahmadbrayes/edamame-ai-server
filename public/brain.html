@@ -7,116 +7,151 @@
 
   <style>
     :root{
-      --bg:#f6f9fc;
-      --card:#ffffff;
-      --text:#0a2540;
-      --muted:#425466;
-      --line:rgba(10,37,64,.12);
-      --shadow:0 10px 30px rgba(50,50,93,.08), 0 2px 6px rgba(0,0,0,.06);
-      --radius:16px;
-      --primary:#635bff;
+      /* Edamame feel */
+      --bg: #f6e5d7;          /* warm beige */
+      --card: #ffffff;
+      --text: #1b1b1b;
+      --muted: #6b6b6b;
+      --line: rgba(0,0,0,.08);
+      --shadow: 0 12px 30px rgba(0,0,0,.10);
+      --radius: 18px;
+
+      --green: #9ACD32;      /* edamame green */
+      --green-2:#7FB21E;
+      --purple:#8f84ff;      /* soft purple accents */
+      --purple-2:#6f63ff;
+
+      --me-bg: rgba(143,132,255,.14);
+      --ai-bg: #fff;
+      --ai-tint: rgba(154,205,50,.10);
     }
+
+    *{ box-sizing:border-box; }
 
     body{
       margin:0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: radial-gradient(900px 500px at 20% 0%, rgba(99,91,255,.12), transparent 60%),
-                  radial-gradient(900px 500px at 80% 0%, rgba(0,163,255,.10), transparent 55%),
-                  var(--bg);
-      color:var(--text);
+      color: var(--text);
+      background:
+        radial-gradient(900px 520px at 15% 0%, rgba(154,205,50,.18), transparent 60%),
+        radial-gradient(900px 520px at 85% 0%, rgba(143,132,255,.18), transparent 60%),
+        var(--bg);
+      min-height: 100vh;
     }
 
-    .wrap{
-      max-width: 980px;
-      margin: 0 auto;
-      height: 100vh;
+    /* Full-page layout */
+    .page{
+      min-height: 100vh;
       display:flex;
       flex-direction:column;
-      padding: 18px;
-      box-sizing:border-box;
+      padding: 16px;
+    }
+
+    .shell{
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      flex: 1;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
     }
 
     header{
-      background: rgba(255,255,255,.75);
-      border:1px solid var(--line);
+      background: rgba(255,255,255,.72);
+      border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       padding: 14px 16px;
       display:flex;
       align-items:center;
-      justify-content:space-between;
-      gap:10px;
+      gap: 12px;
       backdrop-filter: blur(10px);
     }
 
-    header .left{
-      display:flex;
-      align-items:center;
-      gap:10px;
+    .logoDot{
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--green), var(--purple));
+      box-shadow: 0 10px 22px rgba(0,0,0,.10);
+      flex: 0 0 auto;
     }
 
-    header b{
-      font-size: 16px;
+    header .title{
+      display:flex;
+      flex-direction:column;
+      line-height: 1.1;
+    }
+
+    header .title b{
+      font-size: 15.5px;
       letter-spacing: .2px;
     }
 
-    header span{
-      color:var(--muted);
+    header .title span{
+      margin-top: 3px;
       font-size: 12.5px;
-    }
-
-    .uploadBtn{
-      height: 40px;
-      padding: 0 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(10,37,64,.14);
-      background:#fff;
-      color: var(--text);
-      font-weight: 650;
-      cursor:pointer;
+      color: var(--muted);
     }
 
     .chat{
-      flex:1;
+      flex: 1;
+      min-height: 0;
       overflow:auto;
-      margin-top: 14px;
-      background: var(--card);
-      border:1px solid var(--line);
+      background: rgba(255,255,255,.80);
+      border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 18px;
+      padding: 16px;
       display:flex;
       flex-direction:column;
       gap: 12px;
     }
 
     .msg{
-      max-width: 78%;
+      max-width: min(760px, 86%);
       padding: 12px 14px;
-      border-radius: 14px;
-      line-height: 1.6;
+      border-radius: 16px;
+      line-height: 1.55;
       font-size: 14px;
       white-space: pre-wrap;
+      border: 1px solid rgba(0,0,0,.06);
     }
 
     .me{
       align-self:flex-end;
-      background: rgba(99,91,255,.10);
-      border:1px solid rgba(99,91,255,.25);
-      color: var(--text);
+      background: var(--me-bg);
+      border-color: rgba(143,132,255,.26);
     }
 
     .ai{
       align-self:flex-start;
-      background: #f7fafc;
-      border:1px solid rgba(10,37,64,.10);
-      color: var(--text);
+      background: var(--ai-bg);
+    }
+
+    .ai.hint{
+      background: linear-gradient(180deg, rgba(154,205,50,.10), rgba(255,255,255,.95));
+      border-color: rgba(154,205,50,.20);
+    }
+
+    .imgWrap{
+      margin-top: 10px;
+      border-radius: 14px;
+      overflow:hidden;
+      border: 1px solid rgba(0,0,0,.08);
+      box-shadow: 0 10px 20px rgba(0,0,0,.08);
+      background:#fff;
+    }
+
+    .imgWrap img{
+      width: 100%;
+      display:block;
     }
 
     .bar{
-      margin-top: 14px;
-      background: var(--card);
-      border:1px solid var(--line);
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       padding: 12px;
@@ -125,12 +160,45 @@
       align-items: flex-end;
     }
 
+    .leftTools{
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+    }
+
+    .uploadBtn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      height: 40px;
+      padding: 0 12px;
+      border-radius: 14px;
+      border: 1px dashed rgba(0,0,0,.18);
+      background: rgba(154,205,50,.10);
+      color: #234;
+      font-weight: 650;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .12s ease, background .12s ease;
+      white-space: nowrap;
+    }
+    .uploadBtn:hover{ transform: translateY(-1px); background: rgba(154,205,50,.14); }
+
+    .fileName{
+      font-size: 12px;
+      color: var(--muted);
+      max-width: 170px;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     textarea{
-      flex:1;
+      flex: 1;
       resize:none;
       height: 56px;
-      border-radius: 14px;
-      border:1px solid rgba(10,37,64,.14);
+      border-radius: 16px;
+      border: 1px solid rgba(0,0,0,.14);
       background:#fff;
       color: var(--text);
       padding: 12px 12px;
@@ -138,59 +206,58 @@
       outline: none;
     }
     textarea:focus{
-      border-color: rgba(99,91,255,.55);
-      box-shadow: 0 0 0 4px rgba(99,91,255,.14);
+      border-color: rgba(143,132,255,.55);
+      box-shadow: 0 0 0 4px rgba(143,132,255,.16);
     }
 
-    button#send{
+    button{
       width: 132px;
       height: 56px;
-      border-radius: 14px;
-      border:0;
-      background: var(--primary);
-      color:#fff;
-      font-weight: 650;
+      border-radius: 16px;
+      border: 0;
+      background: linear-gradient(135deg, var(--purple-2), var(--green-2));
+      color: #fff;
+      font-weight: 750;
       cursor:pointer;
       transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
-      box-shadow: 0 12px 24px rgba(99,91,255,.20);
+      box-shadow: 0 14px 26px rgba(111,99,255,.22);
     }
-    button#send:hover{ transform: translateY(-1px); }
-    button#send:disabled{ opacity:.6; cursor:not-allowed; box-shadow:none; transform:none; }
+    button:hover{ transform: translateY(-1px); }
+    button:disabled{ opacity:.6; cursor:not-allowed; box-shadow:none; transform:none; }
 
-    .imgwrap{
-      margin-top:8px;
-      border-radius: 14px;
-      overflow:hidden;
-      border:1px solid rgba(10,37,64,.12);
-      background:#fff;
-    }
-    .imgwrap img{
-      display:block;
-      width:100%;
-      height:auto;
+    /* Mobile tweaks */
+    @media (max-width: 640px){
+      .bar{ align-items: stretch; }
+      .leftTools{ flex-direction:row; align-items:center; }
+      .fileName{ max-width: 120px; }
+      button{ width: 110px; }
     }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <header>
-      <div class="left">
-        <b>Edamame Brain</b>
-        <span>Smart. Bold. Deep strategy.</span>
+  <div class="page">
+    <div class="shell">
+      <header>
+        <div class="logoDot"></div>
+        <div class="title">
+          <b>Edamame Brain</b>
+          <span>Smart. Bold. Deep strategy.</span>
+        </div>
+      </header>
+
+      <div id="chat" class="chat"></div>
+
+      <div class="bar" id="dropZone">
+        <div class="leftTools">
+          <label class="uploadBtn" for="productFile">Upload product</label>
+          <div class="fileName" id="fileName">No product image</div>
+          <input id="productFile" type="file" accept="image/*" hidden />
+        </div>
+
+        <textarea id="input" placeholder="Type what you want..."></textarea>
+        <button id="send">Send</button>
       </div>
-
-      <div>
-        <input id="file" type="file" accept="image/*" style="display:none" />
-        <button id="upload" class="uploadBtn">Upload Product</button>
-      </div>
-    </header>
-
-    <div id="chat" class="chat"></div>
-
-    <div class="bar">
-      <textarea id="input" placeholder="Type here... (use /img to generate an image)"></textarea>
-      <button id="send">Send</button>
     </div>
   </div>
 
@@ -198,14 +265,21 @@
     const chat = document.getElementById("chat");
     const input = document.getElementById("input");
     const send = document.getElementById("send");
-    const uploadBtn = document.getElementById("upload");
-    const fileInput = document.getElementById("file");
+    const fileInput = document.getElementById("productFile");
+    const fileNameEl = document.getElementById("fileName");
+    const dropZone = document.getElementById("dropZone");
 
-    // session id
-    if (!localStorage.getItem("sessionId")) {
-      localStorage.setItem("sessionId", crypto.randomUUID());
-    }
-    const sessionId = localStorage.getItem("sessionId");
+    const sessionId = (() => {
+      // stable session per browser
+      let id = localStorage.getItem("edamame_session_id");
+      if(!id){
+        id = "sess_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+        localStorage.setItem("edamame_session_id", id);
+      }
+      return id;
+    })();
+
+    let productImageDataUrl = null;
 
     function addMsg(text, cls){
       const d = document.createElement("div");
@@ -216,54 +290,67 @@
       return d;
     }
 
-    function addImage(b64){
-      const holder = document.createElement("div");
-      holder.className = "msg ai";
+    function addImageBubble(imageUrl){
       const wrap = document.createElement("div");
-      wrap.className = "imgwrap";
+      wrap.className = "msg ai";
+      wrap.textContent = "Generated image:";
+      const imgBox = document.createElement("div");
+      imgBox.className = "imgWrap";
       const img = document.createElement("img");
-      img.src = "data:image/png;base64," + b64;
-      wrap.appendChild(img);
-      holder.appendChild(wrap);
-      chat.appendChild(holder);
+      img.src = imageUrl;
+      img.alt = "Generated";
+      imgBox.appendChild(img);
+      wrap.appendChild(imgBox);
+      chat.appendChild(wrap);
       chat.scrollTop = chat.scrollHeight;
+      return wrap;
     }
 
-    // Upload product image → send to server
-    uploadBtn.addEventListener("click", () => fileInput.click());
-
-    fileInput.addEventListener("change", async () => {
-      const f = fileInput.files?.[0];
-      if (!f) return;
-
-      addMsg("Uploading product image...", "ai");
-      uploadBtn.disabled = true;
-
-      try{
+    async function fileToDataUrl(file){
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = async () => {
-          const imageDataUrl = reader.result; // data:image/...;base64,...
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
 
-          const r = await fetch("/api/product", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ sessionId, imageDataUrl })
-          });
-
-          const data = await r.json();
-          if (!r.ok) {
-            addMsg(data?.message || "Upload failed.", "ai");
-          } else {
-            addMsg("Product image saved. Now type what you want and start with /img", "ai");
-            addMsg("Example: /img Ramadan offer for this product, beige background, premium studio lighting.", "ai");
-          }
-          uploadBtn.disabled = false;
-        };
-        reader.readAsDataURL(f);
-      } catch(e){
-        addMsg("Upload error. Try again.", "ai");
-        uploadBtn.disabled = false;
+    async function handleFile(file){
+      if(!file) return;
+      if(!file.type.startsWith("image/")){
+        addMsg("Please upload an image file.", "ai");
+        return;
       }
+      productImageDataUrl = await fileToDataUrl(file);
+      fileNameEl.textContent = file.name;
+      addMsg("Product image received. Now type what you want to generate.", "ai hint");
+    }
+
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      await handleFile(file);
+    });
+
+    // Drag & drop
+    ["dragenter","dragover"].forEach(evt => {
+      dropZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.style.boxShadow = "0 0 0 4px rgba(154,205,50,.22), " + getComputedStyle(dropZone).boxShadow;
+      });
+    });
+
+    ["dragleave","drop"].forEach(evt => {
+      dropZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.style.boxShadow = "";
+      });
+    });
+
+    dropZone.addEventListener("drop", async (e) => {
+      const file = e.dataTransfer.files?.[0];
+      await handleFile(file);
     });
 
     async function ask(){
@@ -277,37 +364,52 @@
       const waiting = addMsg("...", "ai");
 
       try{
-        // IMAGE MODE: message starts with /img
-        if (text.toLowerCase().startsWith("/img")) {
-          const prompt = text.replace(/^\/img/i, "").trim();
+        // If user uploaded a product image, auto-generate image.
+        if(productImageDataUrl){
           const r = await fetch("/api/image", {
             method:"POST",
             headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ sessionId, prompt })
+            body: JSON.stringify({
+              sessionId,
+              prompt: text,
+              productImage: productImageDataUrl
+            })
           });
+
           const data = await r.json();
 
-          if (!r.ok) {
-            waiting.textContent = data?.message || data?.error || "Image error.";
-          } else {
+          if(!r.ok){
+            waiting.textContent = data?.message || data?.error || "Image request failed.";
+          }else{
             waiting.textContent = "Done.";
-            addImage(data.b64);
+            if(data.imageUrl){
+              addImageBubble(data.imageUrl);
+            }else{
+              addMsg("No image returned.", "ai");
+            }
           }
+
+          // keep the product image for follow-up requests (library behavior)
+          // If you want one-time use, uncomment the next 2 lines:
+          // productImageDataUrl = null;
+          // fileNameEl.textContent = "No product image";
+
           return;
         }
 
-        // Normal chat
+        // Otherwise normal chat
         const r = await fetch("/api/chat", {
           method:"POST",
           headers:{ "Content-Type":"application/json" },
           body: JSON.stringify({ sessionId, message: text })
         });
-        const data = await r.json();
-        waiting.textContent = data.reply || JSON.stringify(data);
 
-      } catch(e){
+        const data = await r.json();
+        waiting.textContent = data.reply || data.message || JSON.stringify(data);
+
+      }catch(e){
         waiting.textContent = "Error. Please try again.";
-      } finally {
+      }finally{
         send.disabled = false;
         input.focus();
       }
@@ -321,7 +423,7 @@
       }
     });
 
-    addMsg("Upload a product image first (top-right). Then generate with: /img ...", "ai");
+    addMsg("Upload a product image, then tell me what you want (ad, Ramadan banner, hero shot, etc.).", "ai hint");
   </script>
 </body>
 </html>
