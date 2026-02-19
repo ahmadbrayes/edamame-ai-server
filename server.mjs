@@ -159,7 +159,7 @@ ${userPrompt}
 `.trim();
 
     const r = await client.responses.create({
-      model: "gpt-4o-mini",
+      model: "gpt-image-1",
       tools: [{ type: "image_generation" }],
       input: [
         {
