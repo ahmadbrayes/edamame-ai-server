@@ -6,201 +6,190 @@
   <title>Edamame Brain</title>
 
   <style>
+    :root{
+      --bg:#f6f9fc;
+      --card:#ffffff;
+      --text:#0a2540;
+      --muted:#425466;
+      --line:rgba(10,37,64,.12);
+      --shadow:0 10px 30px rgba(50,50,93,.08), 0 2px 6px rgba(0,0,0,.06);
+      --radius:16px;
+      --primary:#635bff;
+    }
 
-:root{
-  --bg:#efe1cf;                 /* beige */
-  --card:#ffffff;
-  --text:#2b2b2b;
-  --muted:#6b6b6b;
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(900px 500px at 20% 0%, rgba(99,91,255,.12), transparent 60%),
+                  radial-gradient(900px 500px at 80% 0%, rgba(0,163,255,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
 
-  --primary:#8db600;           /* edamame green */
-  --secondary:#a79ad6;         /* lavender */
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      height: 100vh;
+      display:flex;
+      flex-direction:column;
+      padding: 18px;
+      box-sizing:border-box;
+    }
 
-  --line:rgba(0,0,0,.08);
-  --radius:18px;
-  --shadow:0 10px 30px rgba(0,0,0,.06);
-}
+    header{
+      background: rgba(255,255,255,.75);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      backdrop-filter: blur(10px);
+    }
 
-/* ===== BODY ===== */
+    header .left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
 
-body{
-  margin:0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  background: var(--bg);
-  color:var(--text);
-}
+    header b{
+      font-size: 16px;
+      letter-spacing: .2px;
+    }
 
+    header span{
+      color:var(--muted);
+      font-size: 12.5px;
+    }
 
-/* ===== WRAP ===== */
+    .uploadBtn{
+      height: 40px;
+      padding: 0 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(10,37,64,.14);
+      background:#fff;
+      color: var(--text);
+      font-weight: 650;
+      cursor:pointer;
+    }
 
-.wrap{
-  max-width:1200px;   /* wider = more premium */
-  margin:auto;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-  padding:20px;
-  box-sizing:border-box;
-}
+    .chat{
+      flex:1;
+      overflow:auto;
+      margin-top: 14px;
+      background: var(--card);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
 
+    .msg{
+      max-width: 78%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      line-height: 1.6;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
 
-/* ===== HEADER ===== */
+    .me{
+      align-self:flex-end;
+      background: rgba(99,91,255,.10);
+      border:1px solid rgba(99,91,255,.25);
+      color: var(--text);
+    }
 
-header{
-  background: rgba(255,255,255,.65);
-  backdrop-filter: blur(14px);
-  border:1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding:16px 18px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
+    .ai{
+      align-self:flex-start;
+      background: #f7fafc;
+      border:1px solid rgba(10,37,64,.10);
+      color: var(--text);
+    }
 
-header b{
-  color:var(--primary);
-  font-size:18px;
-  letter-spacing:.3px;
-}
+    .bar{
+      margin-top: 14px;
+      background: var(--card);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px;
+      display:flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
 
-header span{
-  color:var(--muted);
-  font-size:13px;
-}
+    textarea{
+      flex:1;
+      resize:none;
+      height: 56px;
+      border-radius: 14px;
+      border:1px solid rgba(10,37,64,.14);
+      background:#fff;
+      color: var(--text);
+      padding: 12px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    textarea:focus{
+      border-color: rgba(99,91,255,.55);
+      box-shadow: 0 0 0 4px rgba(99,91,255,.14);
+    }
 
+    button#send{
+      width: 132px;
+      height: 56px;
+      border-radius: 14px;
+      border:0;
+      background: var(--primary);
+      color:#fff;
+      font-weight: 650;
+      cursor:pointer;
+      transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+      box-shadow: 0 12px 24px rgba(99,91,255,.20);
+    }
+    button#send:hover{ transform: translateY(-1px); }
+    button#send:disabled{ opacity:.6; cursor:not-allowed; box-shadow:none; transform:none; }
 
-/* ===== CHAT BOX ===== */
-
-.chat{
-  flex:1;
-  overflow:auto;
-  margin-top:16px;
-  background:var(--card);
-  border-radius: var(--radius);
-  border:1px solid var(--line);
-  box-shadow: var(--shadow);
-  padding:20px;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
-
-
-/* ===== MESSAGES ===== */
-
-.msg{
-  max-width:72%;
-  padding:14px 16px;
-  border-radius:16px;
-  line-height:1.6;
-  font-size:14.5px;
-  white-space: pre-wrap;
-}
-
-
-/* USER */
-
-.me{
-  align-self:flex-end;
-  background: rgba(141,182,0,.12);
-  border:1px solid rgba(141,182,0,.35);
-}
-
-
-/* AI */
-
-.ai{
-  align-self:flex-start;
-  background:#ffffff;
-  border:1px solid rgba(0,0,0,.07);
-}
-
-
-/* ===== INPUT BAR ===== */
-
-.bar{
-  margin-top:16px;
-  background:var(--card);
-  border-radius: var(--radius);
-  border:1px solid var(--line);
-  box-shadow: var(--shadow);
-  padding:12px;
-  display:flex;
-  gap:12px;
-  align-items:flex-end;
-}
-
-
-/* ===== TEXTAREA ===== */
-
-textarea{
-  flex:1;
-  resize:none;
-  height:60px;
-  border-radius:16px;
-  border:1px solid rgba(0,0,0,.12);
-  background:#fff;
-  color:var(--text);
-  padding:14px;
-  font-size:14.5px;
-  outline:none;
-}
-
-textarea:focus{
-  border-color: var(--primary);
-  box-shadow:0 0 0 4px rgba(141,182,0,.15);
-}
-
-
-/* ===== BUTTON ===== */
-
-button{
-  width:140px;
-  height:60px;
-  border-radius:16px;
-  border:0;
-  cursor:pointer;
-  color:#fff;
-  font-weight:600;
-  font-size:15px;
-
-  background: linear-gradient(
-    135deg,
-    #8db600,
-    #a79ad6
-  );
-
-  box-shadow:0 10px 25px rgba(0,0,0,.12);
-  transition:.18s;
-}
-
-button:hover{
-  transform:translateY(-2px);
-}
-
-button:disabled{
-  opacity:.6;
-  cursor:not-allowed;
-  transform:none;
-  box-shadow:none;
-}
-
-</style>
-
-
+    .imgwrap{
+      margin-top:8px;
+      border-radius: 14px;
+      overflow:hidden;
+      border:1px solid rgba(10,37,64,.12);
+      background:#fff;
+    }
+    .imgwrap img{
+      display:block;
+      width:100%;
+      height:auto;
+    }
+  </style>
 </head>
+
 <body>
   <div class="wrap">
     <header>
-      <b>Edamame Brain</b>
-      <span>Smart. Bold. Deep strategy.</span>
+      <div class="left">
+        <b>Edamame Brain</b>
+        <span>Smart. Bold. Deep strategy.</span>
+      </div>
+
+      <div>
+        <input id="file" type="file" accept="image/*" style="display:none" />
+        <button id="upload" class="uploadBtn">Upload Product</button>
+      </div>
     </header>
 
     <div id="chat" class="chat"></div>
 
     <div class="bar">
-      <textarea id="input" placeholder="Type here..."></textarea>
+      <textarea id="input" placeholder="Type here... (use /img to generate an image)"></textarea>
       <button id="send">Send</button>
     </div>
   </div>
@@ -209,16 +198,14 @@ button:disabled{
     const chat = document.getElementById("chat");
     const input = document.getElementById("input");
     const send = document.getElementById("send");
+    const uploadBtn = document.getElementById("upload");
+    const fileInput = document.getElementById("file");
 
-    function makeId() {
-      return "s_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2);
+    // session id
+    if (!localStorage.getItem("sessionId")) {
+      localStorage.setItem("sessionId", crypto.randomUUID());
     }
-
-    let sessionId = localStorage.getItem("sessionId");
-    if (!sessionId) {
-      sessionId = makeId();
-      localStorage.setItem("sessionId", sessionId);
-    }
+    const sessionId = localStorage.getItem("sessionId");
 
     function addMsg(text, cls){
       const d = document.createElement("div");
@@ -228,6 +215,56 @@ button:disabled{
       chat.scrollTop = chat.scrollHeight;
       return d;
     }
+
+    function addImage(b64){
+      const holder = document.createElement("div");
+      holder.className = "msg ai";
+      const wrap = document.createElement("div");
+      wrap.className = "imgwrap";
+      const img = document.createElement("img");
+      img.src = "data:image/png;base64," + b64;
+      wrap.appendChild(img);
+      holder.appendChild(wrap);
+      chat.appendChild(holder);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    // Upload product image → send to server
+    uploadBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", async () => {
+      const f = fileInput.files?.[0];
+      if (!f) return;
+
+      addMsg("Uploading product image...", "ai");
+      uploadBtn.disabled = true;
+
+      try{
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const imageDataUrl = reader.result; // data:image/...;base64,...
+
+          const r = await fetch("/api/product", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ sessionId, imageDataUrl })
+          });
+
+          const data = await r.json();
+          if (!r.ok) {
+            addMsg(data?.message || "Upload failed.", "ai");
+          } else {
+            addMsg("Product image saved. Now type what you want and start with /img", "ai");
+            addMsg("Example: /img Ramadan offer for this product, beige background, premium studio lighting.", "ai");
+          }
+          uploadBtn.disabled = false;
+        };
+        reader.readAsDataURL(f);
+      } catch(e){
+        addMsg("Upload error. Try again.", "ai");
+        uploadBtn.disabled = false;
+      }
+    });
 
     async function ask(){
       const text = input.value.trim();
@@ -240,17 +277,37 @@ button:disabled{
       const waiting = addMsg("...", "ai");
 
       try{
+        // IMAGE MODE: message starts with /img
+        if (text.toLowerCase().startsWith("/img")) {
+          const prompt = text.replace(/^\/img/i, "").trim();
+          const r = await fetch("/api/image", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ sessionId, prompt })
+          });
+          const data = await r.json();
+
+          if (!r.ok) {
+            waiting.textContent = data?.message || data?.error || "Image error.";
+          } else {
+            waiting.textContent = "Done.";
+            addImage(data.b64);
+          }
+          return;
+        }
+
+        // Normal chat
         const r = await fetch("/api/chat", {
           method:"POST",
           headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ message: text, sessionId })
+          body: JSON.stringify({ sessionId, message: text })
         });
-
         const data = await r.json();
-        waiting.textContent = data.reply || "No response.";
-      }catch(e){
-        waiting.textContent = "Connection error. Try again.";
-      }finally{
+        waiting.textContent = data.reply || JSON.stringify(data);
+
+      } catch(e){
+        waiting.textContent = "Error. Please try again.";
+      } finally {
         send.disabled = false;
         input.focus();
       }
@@ -264,7 +321,7 @@ button:disabled{
       }
     });
 
-    addMsg("Edamame Content Brain. Tell me what you sell — and I’ll help you create content that drives attention.", "ai");
+    addMsg("Upload a product image first (top-right). Then generate with: /img ...", "ai");
   </script>
 </body>
 </html>
