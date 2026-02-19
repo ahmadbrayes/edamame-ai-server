@@ -124,68 +124,46 @@ app.post("/api/image", async (req, res) => {
     const userPrompt = String(req.body?.prompt || "").trim();
 
     if (!userPrompt) {
-      return res.status(400).json({ error: "PROMPT_REQUIRED", message: "Prompt is required" });
+      return res.status(400).json({ error: "PROMPT_REQUIRED" });
     }
 
     const productDataUrl = productImageBySession[sessionId];
     if (!productDataUrl) {
-      return res.status(400).json({
-        error: "NO_PRODUCT_IMAGE",
-        message: "Upload a product image first.",
-      });
+      return res.status(400).json({ error: "NO_PRODUCT_IMAGE" });
     }
 
     if (!imageUsage[sessionId]) imageUsage[sessionId] = 0;
     if (imageUsage[sessionId] >= 2) {
-      return res.status(403).json({
-        error: "LIMIT_REACHED",
-        message: "You’ve reached the 2-image limit for this session.",
-      });
+      return res.status(403).json({ error: "LIMIT_REACHED" });
     }
+
     imageUsage[sessionId]++;
 
     const wrapped = `
-Create a HIGH-END ecommerce advertisement image using the provided product image as the hero product.
-
-Rules:
-- Keep the product recognizable (same product identity).
-- Premium studio lighting, sharp focus, clean composition.
-- High-conversion ecommerce look.
-- No text, no prices, no logos unless the user explicitly requests them.
-- Avoid cheap AI look, distortion, extra weird objects, warped product.
+Create a high-end ecommerce ad image.
+Keep the product realistic and recognizable.
+Premium lighting. Clean composition.
+No text unless requested.
 
 User request:
 ${userPrompt}
 `.trim();
 
-    const r = await client.responses.create({
+    const result = await client.images.generate({
       model: "gpt-image-1",
-      tools: [{ type: "image_generation" }],
-      input: [
-        {
-          role: "user",
-          content: [
-            { type: "input_text", text: wrapped },
-            { type: "input_image", image_url: productDataUrl },
-          ],
-        },
-      ],
+      prompt: wrapped,
+      size: "1024x1024"
     });
 
-    const call = (r.output || []).find((x) => x.type === "image_generation_call");
-    const b64 = call?.result;
-
-    if (!b64) {
-      return res.status(500).json({ error: "NO_IMAGE", message: "No image returned." });
-    }
+    const b64 = result.data[0].b64_json;
 
     return res.json({ b64 });
+
   } catch (error) {
     console.error("IMAGE ERROR:", error);
     return res.status(500).json({
       error: "IMAGE_ERROR",
       message: String(error?.message || error),
-      status: error?.status || null,
     });
   }
 });
