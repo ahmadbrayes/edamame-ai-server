@@ -338,9 +338,9 @@ async function ask(){
   const waiting=addMsg("…","ai");
 
   const endpoint=hasProduct?"/api/image":"/api/chat";
-  const payload=hasProduct
-    ? {sessionId,prompt:text}
-    : {sessionId,message:text};
+  const payload = hasProduct
+  ? { sessionId, prompt: text, aspect: aspectSel.value }
+  : { sessionId, message: text };
 
   const r=await fetch(endpoint,{
     method:"POST",
