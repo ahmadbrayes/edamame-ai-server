@@ -24,12 +24,11 @@ html,body{
   font-family:system-ui, -apple-system, Segoe UI, Roboto;
   background:var(--bg);
   color:var(--text);
-  overflow:hidden; /* مهم: خلي السكرول داخل الشات مش بالبودي */
+  overflow:hidden; /* السكرول داخل الشات */
 }
 
-/* WRAP */
 .wrap{
-  height:100dvh;          /* مهم للموبايل */
+  height:100dvh;
   width:min(1000px,100%);
   margin:0 auto;
   padding:20px;
@@ -38,7 +37,6 @@ html,body{
   gap:14px;
 }
 
-/* HEADER */
 header{
   display:flex;
   justify-content:space-between;
@@ -63,7 +61,7 @@ header{
   opacity:.7;
 }
 
-/* TOP CONTROLS */
+/* top controls */
 .topControls{
   display:flex;
   gap:10px;
@@ -71,7 +69,6 @@ header{
   flex-wrap:wrap;
 }
 
-/* UPLOAD BUTTON */
 .uploadTop{
   background:var(--green);
   color:white;
@@ -84,36 +81,44 @@ header{
 }
 .uploadTop:hover{ background:var(--greenDark); }
 
-/* ASPECT DROPDOWN (same feel as Send) */
+/* ✅ dropdown نفس لون send */
 .select{
-  height:56px;                 /* نفس ارتفاع textarea والزر */
+  height:44px;
   padding:0 14px;
-  border-radius:14px;
-  border:2px solid var(--purple);
-  background:var(--purple);    /* نفس لون Send */
+  border-radius:12px;
+  border:none;
+  background:var(--purple);
   color:#fff;
-  font-weight:700;
+  font-weight:600;
   cursor:pointer;
-
   appearance:none;
   -webkit-appearance:none;
   -moz-appearance:none;
+  padding-right:36px;
+  position:relative;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255,255,255,.95) 50%),
+    linear-gradient(135deg, rgba(255,255,255,.95) 50%, transparent 50%),
+    linear-gradient(to right, rgba(255,255,255,.0), rgba(255,255,255,.0));
+  background-position:
+    calc(100% - 18px) 18px,
+    calc(100% - 12px) 18px,
+    0 0;
+  background-size:
+    6px 6px,
+    6px 6px,
+    100% 100%;
+  background-repeat:no-repeat;
 }
-.select:hover{ opacity:.95; }
 .select:focus{
   outline:none;
-  box-shadow:0 0 0 4px rgba(142,124,195,.25);
-}
-.select option{
-  background:#fff;
-  color:#222;
-  font-weight:700;
+  box-shadow: 0 0 0 4px rgba(142,124,195,.22);
 }
 
 /* CHAT */
 .chat{
   flex:1;
-  min-height:0;                 /* مهم عشان flex يشتغل */
+  min-height:0;
   overflow:auto;
   -webkit-overflow-scrolling: touch;
   background:white;
@@ -123,8 +128,6 @@ header{
   flex-direction:column;
   gap:12px;
   box-shadow:0 10px 30px rgba(0,0,0,.08);
-
-  /* مساحة تحت عشان البار ما يغطي آخر رسالة */
   padding-bottom: 90px;
 }
 
@@ -137,21 +140,9 @@ header{
   white-space:pre-wrap;
 }
 
-.me{
-  align-self:flex-end;
-  background:var(--purple);
-  color:white;
-}
-
-.ai{
-  align-self:flex-start;
-  background:#f4f4f4;
-}
-
-.err{
-  background:#ffd7dc;
-  color:#b30021;
-}
+.me{ align-self:flex-end; background:var(--purple); color:white; }
+.ai{ align-self:flex-start; background:#f4f4f4; }
+.err{ background:#ffd7dc; color:#b30021; }
 
 .img{
   width:min(500px,100%);
@@ -164,15 +155,9 @@ header{
 .bar{
   display:flex;
   gap:10px;
-
-  /* ثبته تحت */
   position:sticky;
   bottom:0;
-
-  /* نفس خلفية الموقع */
   background:var(--bg);
-
-  /* مساحة آمنة للموبايل */
   padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
   z-index:10;
 }
@@ -185,14 +170,10 @@ textarea{
   border:2px solid var(--green);
   padding:12px;
   font-size:14px;
-
   background:#fff;
   color:var(--text);
-
-  /* مهم للموبايل عشان يلتقط اللمس صح */
   touch-action: manipulation;
 }
-
 textarea:focus{
   outline:none;
   border-color:var(--purple);
@@ -209,7 +190,6 @@ textarea:focus{
 }
 .sendBtn:hover{ opacity:.9; }
 
-/* Download button */
 .dlBtn{
   background:var(--green);
   color:white;
@@ -272,12 +252,12 @@ const aspectSel = document.getElementById("aspect");
 let hasProduct = false;
 
 function slugify(text){
-  return text
+  return (text || "")
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
     .trim()
     .replace(/\s+/g, "-")
-    .slice(0,50);
+    .slice(0,50) || "image";
 }
 
 function addMsg(text, cls){
@@ -289,16 +269,50 @@ function addMsg(text, cls){
   return d;
 }
 
-function addImage(b64, prompt){
+// ✅ watermark (small text) on image client-side so download also has it
+async function watermarkDataUrl(dataUrl){
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+
+      const pad = Math.round(Math.min(c.width, c.height) * 0.018);
+      const fontSize = Math.max(14, Math.round(Math.min(c.width, c.height) * 0.022));
+      ctx.font = `600 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto`;
+      ctx.textBaseline = "bottom";
+      ctx.textAlign = "right";
+
+      const text = "edamame brain";
+      // shadow for readability
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillText(text, c.width - pad + 2, c.height - pad + 2);
+      ctx.fillStyle = "rgba(255,255,255,0.70)";
+      ctx.fillText(text, c.width - pad, c.height - pad);
+
+      resolve(c.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+async function addImage(b64, prompt){
   const wrapper = document.createElement("div");
   wrapper.style.display = "flex";
   wrapper.style.flexDirection = "column";
   wrapper.style.gap = "8px";
   wrapper.style.alignItems = "flex-start";
 
+  const rawDataUrl = "data:image/png;base64," + b64;
+  const finalDataUrl = await watermarkDataUrl(rawDataUrl);
+
   const img = document.createElement("img");
   img.className = "img";
-  img.src = "data:image/png;base64," + b64;
+  img.src = finalDataUrl;
 
   const downloadBtn = document.createElement("button");
   downloadBtn.className = "dlBtn";
@@ -306,8 +320,8 @@ function addImage(b64, prompt){
 
   downloadBtn.onclick = () => {
     const a = document.createElement("a");
-    a.href = img.src;
-    const cleanName = slugify(prompt || "image");
+    a.href = finalDataUrl;
+    const cleanName = slugify(prompt);
     a.download = `edamame-brain-${cleanName}.png`;
     document.body.appendChild(a);
     a.click();
@@ -323,23 +337,20 @@ function addImage(b64, prompt){
 async function uploadProduct(file){
   const reader = new FileReader();
   reader.onload = async () => {
-    try{
-      const r = await fetch("/api/product",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ sessionId, imageDataUrl: reader.result })
-      });
+    const r = await fetch("/api/product",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ sessionId, imageDataUrl: reader.result })
+    });
 
-      const data = await r.json().catch(()=> ({}));
+    const data = await r.json().catch(()=> ({}));
 
-      if(r.ok){
-        hasProduct = true;
-        addMsg("Product image uploaded. Now describe your scene.","ai");
-      }else{
-        addMsg(data?.message || "Upload failed.","err");
-      }
-    }catch(e){
-      addMsg("Upload failed.","err");
+    if(r.ok){
+      hasProduct = true;
+      addMsg("Product image uploaded. Now describe your scene.", "ai");
+      setTimeout(()=> input.focus(), 50);
+    } else {
+      addMsg(data.message || "Upload failed.", "err");
     }
   };
   reader.readAsDataURL(file);
@@ -359,9 +370,9 @@ async function ask(){
     : { sessionId, message: text };
 
   try{
-    const r = await fetch(endpoint,{
+    const r = await fetch(endpoint, {
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify(payload)
     });
 
@@ -369,27 +380,26 @@ async function ask(){
 
     if(!r.ok){
       waiting.className = "msg err";
-      waiting.textContent = data?.message || data?.error || "Error.";
+      waiting.textContent = data.message || ("Error (" + r.status + ")");
       return;
     }
 
     if(hasProduct){
       waiting.textContent = "Done.";
-      if(data?.b64) addImage(data.b64, text);
-      else addMsg("No image returned.","err");
-    }else{
-      waiting.textContent = data?.reply || "No reply.";
+      if(data.b64) await addImage(data.b64, text);
+      else addMsg("No image returned.", "err");
+    } else {
+      waiting.textContent = data.reply || "No reply.";
     }
-  }catch(e){
+  } catch(e){
     waiting.className = "msg err";
-    waiting.textContent = "Network error.";
+    waiting.textContent = "Network error. Try again.";
+  } finally {
+    setTimeout(()=> input.focus(), 50);
   }
-
-  setTimeout(()=> input.focus(), 50);
 }
 
 uploadBtn.onclick = () => fileInput.click();
-
 fileInput.onchange = (e) => {
   const f = e.target.files?.[0];
   if(f) uploadProduct(f);
@@ -397,7 +407,6 @@ fileInput.onchange = (e) => {
 };
 
 send.onclick = ask;
-
 input.onkeydown = (e) => {
   if(e.key === "Enter" && !e.shiftKey){
     e.preventDefault();
@@ -405,7 +414,7 @@ input.onkeydown = (e) => {
   }
 };
 
-addMsg("Ask for content strategy — or upload your product and create powerful marketing visuals.","ai");
+addMsg("Ask for content strategy — or upload your product and create powerful marketing visuals.", "ai");
 </script>
 
 </body>
