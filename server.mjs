@@ -17,7 +17,7 @@ const client = new OpenAI({
 
 const conversations = {};
 const productImageBySession = {};
-const imageUsage = {};
+const imageUsage = {}; // ✅ limit per session (does NOT reset on upload)
 
 const SYSTEM_PROMPT = `
 You are Edamame Brain — the content operator for serious brands.
@@ -62,9 +62,15 @@ app.post("/api/product", (req, res) => {
     }
 
     productImageBySession[sessionId] = dataUrl;
-    imageUsage[sessionId] = 0;
 
-    return res.json({ ok: true });
+    // ✅ DO NOT reset imageUsage here anymore
+    if (typeof imageUsage[sessionId] !== "number") imageUsage[sessionId] = 0;
+
+    return res.json({
+      ok: true,
+      used: imageUsage[sessionId],
+      remaining: Math.max(0, 2 - imageUsage[sessionId]),
+    });
   } catch (e) {
     return res.status(500).json({
       error: "UPLOAD_ERROR",
@@ -86,15 +92,10 @@ app.post("/api/chat", async (req, res) => {
     const sessionId = String(req.body?.sessionId || "default");
 
     if (!conversations[sessionId]) {
-      conversations[sessionId] = [
-        { role: "system", content: SYSTEM_PROMPT },
-      ];
+      conversations[sessionId] = [{ role: "system", content: SYSTEM_PROMPT }];
     }
 
-    conversations[sessionId].push({
-      role: "user",
-      content: userMessage,
-    });
+    conversations[sessionId].push({ role: "user", content: userMessage });
 
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
@@ -107,10 +108,7 @@ app.post("/api/chat", async (req, res) => {
       (response.output_text || "").trim() ||
       "Rephrase that in one clear sentence.";
 
-    conversations[sessionId].push({
-      role: "assistant",
-      content: aiReply,
-    });
+    conversations[sessionId].push({ role: "assistant", content: aiReply });
 
     return res.json({ reply: aiReply });
   } catch (error) {
@@ -123,12 +121,16 @@ app.post("/api/chat", async (req, res) => {
 });
 
 /* =========================
-   3) Image Generation
+   3) Image Generation (16:9 / 9:16)
 ========================= */
 app.post("/api/image", async (req, res) => {
   try {
     const sessionId = String(req.body?.sessionId || "default");
     const userPrompt = String(req.body?.prompt || "").trim();
+
+    // ✅ aspect from frontend (default 16:9)
+    const aspect = req.body?.aspect === "9:16" ? "9:16" : "16:9";
+    const size = aspect === "9:16" ? "1024x1792" : "1792x1024";
 
     if (!userPrompt) {
       return res.status(400).json({ error: "PROMPT_REQUIRED" });
@@ -142,15 +144,17 @@ app.post("/api/image", async (req, res) => {
       });
     }
 
-    if (!imageUsage[sessionId]) imageUsage[sessionId] = 0;
+    if (typeof imageUsage[sessionId] !== "number") imageUsage[sessionId] = 0;
+
+    // ✅ limit 2 per session total (not reset on upload)
     if (imageUsage[sessionId] >= 2) {
       return res.status(403).json({
         error: "LIMIT_REACHED",
-        message: "2 image limit reached for this session.",
+        message: "your daily limit of 2 photos has been reached",
+        used: imageUsage[sessionId],
+        remaining: 0,
       });
     }
-
-    imageUsage[sessionId]++;
 
     const strictPrompt = `
 You are performing a PRODUCT-LOCKED EDIT.
@@ -162,6 +166,9 @@ ABSOLUTE RULES:
 - Only modify environment, background, lighting, styling.
 - Maintain realism and correct perspective.
 - This is an image edit, not new product generation.
+
+OUTPUT REQUIREMENT:
+- Aspect ratio MUST be ${aspect}.
 
 User request:
 ${userPrompt}
@@ -179,21 +186,30 @@ ${userPrompt}
           ],
         },
       ],
+      // ✅ enforce size (if supported by your SDK; if not, the prompt still pushes aspect)
+      size,
     });
 
-    const imageCall = response.output.find(
+    const imageCall = (response.output || []).find(
       (x) => x.type === "image_generation_call"
     );
 
     const b64 = imageCall?.result;
 
     if (!b64) {
-      return res.status(500).json({
-        error: "NO_IMAGE_RETURNED",
-      });
+      return res.status(500).json({ error: "NO_IMAGE_RETURNED" });
     }
 
-    return res.json({ b64 });
+    // ✅ increment only after success
+    imageUsage[sessionId]++;
+
+    return res.json({
+      b64,
+      used: imageUsage[sessionId],
+      remaining: Math.max(0, 2 - imageUsage[sessionId]),
+      aspect,
+      size,
+    });
   } catch (error) {
     console.error("IMAGE ERROR:", error);
     return res.status(500).json({
