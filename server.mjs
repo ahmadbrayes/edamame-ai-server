@@ -2,22 +2,23 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 import OpenAI from "openai";
+import { toFile } from "openai/uploads";
 
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "3mb" }));
+app.use(express.json({ limit: "6mb" }));
 app.use(express.static("public"));
 
 app.get("/", (req, res) => res.redirect("/brain.html"));
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const conversations = {};
 const productImageBySession = {};
-const imageUsage = {}; // ✅ limit per session (does NOT reset on upload)
+
+// daily limit: 2 per sessionId per day
+const dailyUsage = {}; // { [sessionId]: { date: "YYYY-MM-DD", count: number } }
 
 const SYSTEM_PROMPT = `
 You are Edamame Brain — the content operator for serious brands.
@@ -42,9 +43,29 @@ If asked how you know something:
 You are the content brain serious brands wish they had internally.
 `.trim();
 
-app.get("/health", (req, res) => {
-  res.json({ ok: true });
-});
+app.get("/health", (req, res) => res.json({ ok: true }));
+
+function todayKey() {
+  // daily reset based on server UTC day
+  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+function ensureDailyUsage(sessionId) {
+  const d = todayKey();
+  if (!dailyUsage[sessionId] || dailyUsage[sessionId].date !== d) {
+    dailyUsage[sessionId] = { date: d, count: 0 };
+  }
+  return dailyUsage[sessionId];
+}
+
+function dataUrlToBuffer(dataUrl) {
+  const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+  if (!match) return null;
+  const mime = match[1];
+  const b64 = match[2];
+  const buf = Buffer.from(b64, "base64");
+  return { mime, buf };
+}
 
 /* =========================
    1) Upload Product Image
@@ -63,14 +84,10 @@ app.post("/api/product", (req, res) => {
 
     productImageBySession[sessionId] = dataUrl;
 
-    // ✅ DO NOT reset imageUsage here anymore
-    if (typeof imageUsage[sessionId] !== "number") imageUsage[sessionId] = 0;
+    // ✅ لا تعمل reset للـ limit هون (عشان مش لكل upload)
+    ensureDailyUsage(sessionId);
 
-    return res.json({
-      ok: true,
-      used: imageUsage[sessionId],
-      remaining: Math.max(0, 2 - imageUsage[sessionId]),
-    });
+    return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({
       error: "UPLOAD_ERROR",
@@ -121,16 +138,12 @@ app.post("/api/chat", async (req, res) => {
 });
 
 /* =========================
-   3) Image Generation (16:9 / 9:16)
+   3) Image Generation (Images API) + aspect ratio + daily limit
 ========================= */
 app.post("/api/image", async (req, res) => {
   try {
     const sessionId = String(req.body?.sessionId || "default");
     const userPrompt = String(req.body?.prompt || "").trim();
-
-    // ✅ aspect from frontend (default 16:9)
-    const aspect = req.body?.aspect === "9:16" ? "9:16" : "16:9";
-    const size = aspect === "9:16" ? "1024x1792" : "1792x1024";
 
     if (!userPrompt) {
       return res.status(400).json({ error: "PROMPT_REQUIRED" });
@@ -144,17 +157,17 @@ app.post("/api/image", async (req, res) => {
       });
     }
 
-    if (typeof imageUsage[sessionId] !== "number") imageUsage[sessionId] = 0;
-
-    // ✅ limit 2 per session total (not reset on upload)
-    if (imageUsage[sessionId] >= 2) {
+    // ✅ daily limit 2 per session
+    const usage = ensureDailyUsage(sessionId);
+    if (usage.count >= 2) {
       return res.status(403).json({
         error: "LIMIT_REACHED",
-        message: "your daily limit of 2 photos has been reached",
-        used: imageUsage[sessionId],
-        remaining: 0,
+        message: "Your daily limit of 2 photos has been reached",
       });
     }
+
+    const aspect = req.body?.aspect === "9:16" ? "9:16" : "16:9";
+    const size = aspect === "9:16" ? "1024x1792" : "1792x1024";
 
     const strictPrompt = `
 You are performing a PRODUCT-LOCKED EDIT.
@@ -167,49 +180,43 @@ ABSOLUTE RULES:
 - Maintain realism and correct perspective.
 - This is an image edit, not new product generation.
 
-OUTPUT REQUIREMENT:
-- Aspect ratio MUST be ${aspect}.
-
 User request:
 ${userPrompt}
+
+Output framing:
+- Match aspect ratio exactly: ${aspect}
 `.trim();
 
-    const response = await client.responses.create({
-      model: "gpt-4.1-mini",
-      tools: [{ type: "image_generation" }],
-      input: [
-        {
-          role: "user",
-          content: [
-            { type: "input_text", text: strictPrompt },
-            { type: "input_image", image_url: productDataUrl },
-          ],
-        },
-      ],
-      // ✅ enforce size (if supported by your SDK; if not, the prompt still pushes aspect)
-      size,
+    const parsed = dataUrlToBuffer(productDataUrl);
+    if (!parsed) {
+      return res.status(400).json({
+        error: "INVALID_IMAGE",
+        message: "Invalid product image format.",
+      });
+    }
+
+    const productFile = await toFile(parsed.buf, "product.png", {
+      type: parsed.mime,
     });
 
-    const imageCall = (response.output || []).find(
-      (x) => x.type === "image_generation_call"
-    );
+    // ✅ Images API (supports size)
+    const img = await client.images.edit({
+      model: "gpt-image-1",
+      image: productFile,
+      prompt: strictPrompt,
+      size,
+      response_format: "b64_json",
+    });
 
-    const b64 = imageCall?.result;
-
+    const b64 = img?.data?.[0]?.b64_json;
     if (!b64) {
       return res.status(500).json({ error: "NO_IMAGE_RETURNED" });
     }
 
     // ✅ increment only after success
-    imageUsage[sessionId]++;
+    usage.count += 1;
 
-    return res.json({
-      b64,
-      used: imageUsage[sessionId],
-      remaining: Math.max(0, 2 - imageUsage[sessionId]),
-      aspect,
-      size,
-    });
+    return res.json({ b64, aspect, size });
   } catch (error) {
     console.error("IMAGE ERROR:", error);
     return res.status(500).json({
@@ -220,7 +227,4 @@ ${userPrompt}
 });
 
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("AI SERVER RUNNING http://localhost:" + PORT);
-});
+app.listen(PORT, () => console.log("AI SERVER RUNNING http://localhost:" + PORT));
