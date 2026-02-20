@@ -201,7 +201,7 @@ Output framing:
 
     // ✅ Images API (supports size)
     const img = await client.images.edit({
-      model: "gpt-image-1",
+  model: "dall-e-2",
       image: productFile,
       prompt: strictPrompt,
       size,
