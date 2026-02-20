@@ -28,7 +28,7 @@ html,body{
 }
 
 .wrap{
-  height:100%;
+  min-height:100vh;
   width:min(1000px,100%);
   margin:0 auto;
   padding:20px;
@@ -37,7 +37,6 @@ html,body{
   gap:14px;
 }
 
-/* HEADER */
 header{
   display:flex;
   justify-content:space-between;
@@ -62,7 +61,6 @@ header{
   opacity:.7;
 }
 
-/* UPLOAD BUTTON */
 .uploadTop{
   background:var(--green);
   color:white;
@@ -78,7 +76,6 @@ header{
   background:var(--greenDark);
 }
 
-/* CHAT */
 .chat{
   flex:1;
   overflow:auto;
@@ -122,7 +119,6 @@ header{
   margin-top:8px;
 }
 
-/* INPUT BAR */
 .bar{
   display:flex;
   gap:10px;
@@ -197,6 +193,15 @@ const fileInput=document.getElementById("fileInput");
 
 let hasProduct=false;
 
+function slugify(text){
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0,50);
+}
+
 function addMsg(text,cls){
   const d=document.createElement("div");
   d.className="msg "+cls;
@@ -206,11 +211,40 @@ function addMsg(text,cls){
   return d;
 }
 
-function addImage(b64){
+function addImage(b64, prompt){
+  const wrapper=document.createElement("div");
+  wrapper.style.display="flex";
+  wrapper.style.flexDirection="column";
+  wrapper.style.gap="8px";
+  wrapper.style.alignItems="flex-start";
+
   const img=document.createElement("img");
   img.className="img";
   img.src="data:image/png;base64,"+b64;
-  chat.appendChild(img);
+
+  const downloadBtn=document.createElement("button");
+  downloadBtn.textContent="Download image";
+  downloadBtn.style.background="var(--green)";
+  downloadBtn.style.color="white";
+  downloadBtn.style.border="none";
+  downloadBtn.style.padding="8px 14px";
+  downloadBtn.style.borderRadius="10px";
+  downloadBtn.style.cursor="pointer";
+  downloadBtn.style.fontSize="13px";
+
+  downloadBtn.onclick=()=>{
+    const a=document.createElement("a");
+    a.href=img.src;
+    const cleanName=slugify(prompt||"image");
+    a.download=`edamame-brain-${cleanName}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  wrapper.appendChild(img);
+  wrapper.appendChild(downloadBtn);
+  chat.appendChild(wrapper);
   chat.scrollTop=chat.scrollHeight;
 }
 
@@ -260,7 +294,7 @@ async function ask(){
 
   if(hasProduct){
     waiting.textContent="Done.";
-    if(data.b64) addImage(data.b64);
+    if(data.b64) addImage(data.b64, text);
   }else{
     waiting.textContent=data.reply;
   }
