@@ -77,6 +77,24 @@ header{
   transition:.2s;
 }
 
+.topControls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.select{
+  height:44px;
+  padding:0 12px;
+  border-radius:12px;
+  border:2px solid rgba(0,0,0,.08);
+  background:#fff;
+  font-weight:700;
+  color:rgba(0,0,0,.7);
+  cursor:pointer;
+}
+
 .uploadTop:hover{ background:var(--greenDark); }
 
 /* CHAT */
@@ -208,7 +226,17 @@ textarea:focus{
   </div>
 </header>
 
-<button id="uploadBtn" class="uploadTop">Upload product image</button>
+<div class="topControls">
+  <button id="uploadBtn" class="uploadTop">
+    Upload product image
+  </button>
+
+  <select id="aspect" class="select">
+    <option value="16:9">16:9</option>
+    <option value="9:16">9:16</option>
+  </select>
+</div>
+
 <input type="file" id="fileInput" accept="image/*" style="display:none"/>
 
 <div id="chat" class="chat"></div>
