@@ -24,9 +24,7 @@ html,body{
   font-family:system-ui, -apple-system, Segoe UI, Roboto;
   background:var(--bg);
   color:var(--text);
-
-  /* مهم: خلي السكرول داخل الشات مش بالبودي */
-  overflow:hidden;
+  overflow:hidden; /* مهم: خلي السكرول داخل الشات مش بالبودي */
 }
 
 /* WRAP */
@@ -65,6 +63,14 @@ header{
   opacity:.7;
 }
 
+/* TOP CONTROLS */
+.topControls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
 /* UPLOAD BUTTON */
 .uploadTop{
   background:var(--green);
@@ -76,26 +82,33 @@ header{
   cursor:pointer;
   transition:.2s;
 }
-
-.topControls{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
-}
-
-.select{
-  height:44px;
-  padding:0 12px;
-  border-radius:12px;
-  border:2px solid rgba(0,0,0,.08);
-  background:#fff;
-  font-weight:700;
-  color:rgba(0,0,0,.7);
-  cursor:pointer;
-}
-
 .uploadTop:hover{ background:var(--greenDark); }
+
+/* ASPECT DROPDOWN (same feel as Send) */
+.select{
+  height:56px;                 /* نفس ارتفاع textarea والزر */
+  padding:0 14px;
+  border-radius:14px;
+  border:2px solid var(--purple);
+  background:var(--purple);    /* نفس لون Send */
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+
+  appearance:none;
+  -webkit-appearance:none;
+  -moz-appearance:none;
+}
+.select:hover{ opacity:.95; }
+.select:focus{
+  outline:none;
+  box-shadow:0 0 0 4px rgba(142,124,195,.25);
+}
+.select option{
+  background:#fff;
+  color:#222;
+  font-weight:700;
+}
 
 /* CHAT */
 .chat{
@@ -194,7 +207,6 @@ textarea:focus{
   font-weight:600;
   cursor:pointer;
 }
-
 .sendBtn:hover{ opacity:.9; }
 
 /* Download button */
@@ -227,11 +239,9 @@ textarea:focus{
 </header>
 
 <div class="topControls">
-  <button id="uploadBtn" class="uploadTop">
-    Upload product image
-  </button>
+  <button id="uploadBtn" class="uploadTop">Upload product image</button>
 
-  <select id="aspect" class="select">
+  <select id="aspect" class="select" title="Aspect ratio">
     <option value="16:9">16:9</option>
     <option value="9:16">9:16</option>
   </select>
@@ -252,14 +262,14 @@ textarea:focus{
 const sessionId = localStorage.getItem("edamame_sessionId") || crypto.randomUUID();
 localStorage.setItem("edamame_sessionId", sessionId);
 
-const chat=document.getElementById("chat");
-const input=document.getElementById("input");
-const send=document.getElementById("send");
-const uploadBtn=document.getElementById("uploadBtn");
-const fileInput=document.getElementById("fileInput");
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+const send = document.getElementById("send");
+const uploadBtn = document.getElementById("uploadBtn");
+const fileInput = document.getElementById("fileInput");
 const aspectSel = document.getElementById("aspect");
 
-let hasProduct=false;
+let hasProduct = false;
 
 function slugify(text){
   return text
@@ -270,35 +280,35 @@ function slugify(text){
     .slice(0,50);
 }
 
-function addMsg(text,cls){
-  const d=document.createElement("div");
-  d.className="msg "+cls;
-  d.textContent=text;
+function addMsg(text, cls){
+  const d = document.createElement("div");
+  d.className = "msg " + cls;
+  d.textContent = text;
   chat.appendChild(d);
-  chat.scrollTop=chat.scrollHeight;
+  chat.scrollTop = chat.scrollHeight;
   return d;
 }
 
 function addImage(b64, prompt){
-  const wrapper=document.createElement("div");
-  wrapper.style.display="flex";
-  wrapper.style.flexDirection="column";
-  wrapper.style.gap="8px";
-  wrapper.style.alignItems="flex-start";
+  const wrapper = document.createElement("div");
+  wrapper.style.display = "flex";
+  wrapper.style.flexDirection = "column";
+  wrapper.style.gap = "8px";
+  wrapper.style.alignItems = "flex-start";
 
-  const img=document.createElement("img");
-  img.className="img";
-  img.src="data:image/png;base64,"+b64;
+  const img = document.createElement("img");
+  img.className = "img";
+  img.src = "data:image/png;base64," + b64;
 
-  const downloadBtn=document.createElement("button");
-  downloadBtn.className="dlBtn";
-  downloadBtn.textContent="Download image";
+  const downloadBtn = document.createElement("button");
+  downloadBtn.className = "dlBtn";
+  downloadBtn.textContent = "Download image";
 
-  downloadBtn.onclick=()=>{
-    const a=document.createElement("a");
-    a.href=img.src;
-    const cleanName=slugify(prompt||"image");
-    a.download=`edamame-brain-${cleanName}.png`;
+  downloadBtn.onclick = () => {
+    const a = document.createElement("a");
+    a.href = img.src;
+    const cleanName = slugify(prompt || "image");
+    a.download = `edamame-brain-${cleanName}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -307,22 +317,28 @@ function addImage(b64, prompt){
   wrapper.appendChild(img);
   wrapper.appendChild(downloadBtn);
   chat.appendChild(wrapper);
-  chat.scrollTop=chat.scrollHeight;
+  chat.scrollTop = chat.scrollHeight;
 }
 
 async function uploadProduct(file){
-  const reader=new FileReader();
-  reader.onload=async ()=>{
-    const r=await fetch("/api/product",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({sessionId,imageDataUrl:reader.result})
-    });
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try{
+      const r = await fetch("/api/product",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ sessionId, imageDataUrl: reader.result })
+      });
 
-    if(r.ok){
-      hasProduct=true;
-      addMsg("Product image uploaded. Now describe your scene.","ai");
-    }else{
+      const data = await r.json().catch(()=> ({}));
+
+      if(r.ok){
+        hasProduct = true;
+        addMsg("Product image uploaded. Now describe your scene.","ai");
+      }else{
+        addMsg(data?.message || "Upload failed.","err");
+      }
+    }catch(e){
       addMsg("Upload failed.","err");
     }
   };
@@ -330,53 +346,60 @@ async function uploadProduct(file){
 }
 
 async function ask(){
-  const text=input.value.trim();
+  const text = input.value.trim();
   if(!text) return;
 
-  input.value="";
-  addMsg(text,"me");
-  const waiting=addMsg("…","ai");
+  input.value = "";
+  addMsg(text, "me");
+  const waiting = addMsg("…", "ai");
 
-  const endpoint=hasProduct?"/api/image":"/api/chat";
+  const endpoint = hasProduct ? "/api/image" : "/api/chat";
   const payload = hasProduct
-  ? { sessionId, prompt: text, aspect: aspectSel.value }
-  : { sessionId, message: text };
+    ? { sessionId, prompt: text, aspect: aspectSel.value }
+    : { sessionId, message: text };
 
-  const r=await fetch(endpoint,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(payload)
-  });
+  try{
+    const r = await fetch(endpoint,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
 
-  const data=await r.json().catch(()=> ({}));
-  if(!r.ok){
-    waiting.className="msg err";
-    waiting.textContent=data.message||"Error.";
-    return;
+    const data = await r.json().catch(()=> ({}));
+
+    if(!r.ok){
+      waiting.className = "msg err";
+      waiting.textContent = data?.message || data?.error || "Error.";
+      return;
+    }
+
+    if(hasProduct){
+      waiting.textContent = "Done.";
+      if(data?.b64) addImage(data.b64, text);
+      else addMsg("No image returned.","err");
+    }else{
+      waiting.textContent = data?.reply || "No reply.";
+    }
+  }catch(e){
+    waiting.className = "msg err";
+    waiting.textContent = "Network error.";
   }
 
-  if(hasProduct){
-    waiting.textContent="Done.";
-    if(data.b64) addImage(data.b64, text);
-    else addMsg("No image returned.","err");
-  }else{
-    waiting.textContent=data.reply || "No reply.";
-  }
-
-  // رجّع الفوكس للمربع (مهم للموبايل)
   setTimeout(()=> input.focus(), 50);
 }
 
-uploadBtn.onclick=()=>fileInput.click();
-fileInput.onchange=e=>{
-  const f=e.target.files?.[0];
+uploadBtn.onclick = () => fileInput.click();
+
+fileInput.onchange = (e) => {
+  const f = e.target.files?.[0];
   if(f) uploadProduct(f);
-  fileInput.value="";
+  fileInput.value = "";
 };
 
-send.onclick=ask;
-input.onkeydown=e=>{
-  if(e.key==="Enter" && !e.shiftKey){
+send.onclick = ask;
+
+input.onkeydown = (e) => {
+  if(e.key === "Enter" && !e.shiftKey){
     e.preventDefault();
     ask();
   }
