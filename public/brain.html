@@ -1,442 +1,286 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Edamame Brain</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Edamame Brain</title>
 
-  <style>
-    :root{
-      --bg1:#0b1020;
-      --bg2:#0a2540;
-      --card: rgba(255,255,255,.06);
-      --card2: rgba(255,255,255,.08);
-      --text:#eaf0ff;
-      --muted:rgba(234,240,255,.70);
-      --line: rgba(255,255,255,.10);
-      --shadow: 0 18px 50px rgba(0,0,0,.35);
-      --radius: 18px;
+<style>
+:root{
+  --bg:#E9D8C2;
+  --green:#9ACD32;
+  --greenDark:#7FB800;
+  --purple:#8E7CC3;
+  --white:#ffffff;
+  --text:#3b3b3b;
+  --radius:18px;
+}
 
-      --primary:#7c5cff;   /* Stripe-ish purple */
-      --primary2:#35d6ff;  /* cyan */
-      --accent:#9BE15D;    /* subtle green */
-      --danger:#ff5c7a;
-    }
+*{box-sizing:border-box;}
 
-    *{ box-sizing:border-box; }
+html,body{
+  height:100%;
+  margin:0;
+  font-family:system-ui, -apple-system, Segoe UI, Roboto;
+  background:var(--bg);
+  color:var(--text);
+}
 
-    html, body{
-      height:100%;
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      color:var(--text);
-      background:
-        radial-gradient(900px 500px at 20% 0%, rgba(124,92,255,.20), transparent 60%),
-        radial-gradient(900px 500px at 80% 0%, rgba(53,214,255,.14), transparent 55%),
-        radial-gradient(900px 650px at 50% 100%, rgba(155,225,93,.10), transparent 60%),
-        linear-gradient(180deg, var(--bg1), var(--bg2));
-      overflow:hidden;
-    }
+.wrap{
+  height:100%;
+  width:min(1000px,100%);
+  margin:0 auto;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
 
-    .wrap{
-      height:100%;
-      width: min(1040px, 100%);
-      margin: 0 auto;
-      padding: 16px;
-      display:flex;
-      flex-direction:column;
-      gap: 12px;
-    }
+/* HEADER */
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
 
-    header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 12px;
-      padding: 14px 16px;
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
-      border:1px solid var(--line);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-    }
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
 
-    .brand{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      min-width: 0;
-    }
+.brand h1{
+  margin:0;
+  font-size:22px;
+  color:var(--purple);
+}
 
-    .dot{
-      width: 14px;
-      height: 14px;
-      border-radius: 6px;
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      box-shadow: 0 10px 30px rgba(124,92,255,.35);
-      flex: 0 0 auto;
-    }
+.brand p{
+  margin:0;
+  font-size:13px;
+  opacity:.7;
+}
 
-    .brand h1{
-      margin:0;
-      font-size: 16px;
-      letter-spacing:.2px;
-      white-space: nowrap;
-      overflow:hidden;
-      text-overflow: ellipsis;
-    }
+/* UPLOAD BUTTON */
+.uploadTop{
+  background:var(--green);
+  color:white;
+  border:none;
+  padding:12px 18px;
+  border-radius:12px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.2s;
+}
 
-    .brand p{
-      margin:0;
-      font-size: 12.5px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow:hidden;
-      text-overflow: ellipsis;
-    }
+.uploadTop:hover{
+  background:var(--greenDark);
+}
 
-    .right{
-      display:flex;
-      gap: 10px;
-      align-items:center;
-      flex: 0 0 auto;
-    }
+/* CHAT */
+.chat{
+  flex:1;
+  overflow:auto;
+  background:white;
+  padding:18px;
+  border-radius:var(--radius);
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
 
-    .pill{
-      font-size: 12px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid var(--line);
-      color: var(--muted);
-      user-select:none;
-    }
+.msg{
+  max-width:80%;
+  padding:12px 16px;
+  border-radius:14px;
+  font-size:14px;
+  line-height:1.5;
+  white-space:pre-wrap;
+}
 
-    .chat{
-      flex:1;
-      overflow:auto;
-      padding: 16px;
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
-      border:1px solid var(--line);
-      box-shadow: var(--shadow);
-      display:flex;
-      flex-direction:column;
-      gap: 12px;
-    }
+.me{
+  align-self:flex-end;
+  background:var(--purple);
+  color:white;
+}
 
-    .msg{
-      max-width: 82%;
-      padding: 12px 14px;
-      border-radius: 14px;
-      line-height: 1.55;
-      font-size: 14px;
-      white-space: pre-wrap;
-      border: 1px solid transparent;
-    }
+.ai{
+  align-self:flex-start;
+  background:#f4f4f4;
+}
 
-    .me{
-      align-self:flex-end;
-      background: rgba(124,92,255,.16);
-      border-color: rgba(124,92,255,.28);
-    }
+.err{
+  background:#ffd7dc;
+  color:#b30021;
+}
 
-    .ai{
-      align-self:flex-start;
-      background: rgba(255,255,255,.07);
-      border-color: rgba(255,255,255,.10);
-    }
+.img{
+  width:min(500px,100%);
+  border-radius:14px;
+  margin-top:8px;
+}
 
-    .sys{
-      align-self:flex-start;
-      background: rgba(53,214,255,.10);
-      border-color: rgba(53,214,255,.22);
-      color: rgba(234,240,255,.85);
-    }
+/* INPUT BAR */
+.bar{
+  display:flex;
+  gap:10px;
+}
 
-    .err{
-      align-self:flex-start;
-      background: rgba(255,92,122,.12);
-      border-color: rgba(255,92,122,.24);
-      color: rgba(255,225,231,.95);
-    }
+textarea{
+  flex:1;
+  resize:none;
+  height:56px;
+  border-radius:14px;
+  border:2px solid var(--green);
+  padding:12px;
+  font-size:14px;
+}
 
-    .img{
-      display:block;
-      width: min(520px, 100%);
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow: 0 16px 40px rgba(0,0,0,.35);
-      margin-top: 8px;
-    }
+textarea:focus{
+  outline:none;
+  border-color:var(--purple);
+}
 
-    .bar{
-      display:flex;
-      gap: 10px;
-      align-items: flex-end;
-      padding: 12px;
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
-      border:1px solid var(--line);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-    }
+.sendBtn{
+  background:var(--purple);
+  color:white;
+  border:none;
+  padding:0 20px;
+  border-radius:14px;
+  font-weight:600;
+  cursor:pointer;
+}
 
-    textarea{
-      flex:1;
-      resize:none;
-      height: 56px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(10,16,32,.55);
-      color: var(--text);
-      padding: 12px 12px;
-      font-size: 14px;
-      outline: none;
-    }
-    textarea:focus{
-      border-color: rgba(124,92,255,.55);
-      box-shadow: 0 0 0 4px rgba(124,92,255,.18);
-    }
+.sendBtn:hover{
+  opacity:.9;
+}
 
-    button{
-      height: 56px;
-      border-radius: 14px;
-      border:0;
-      color:#fff;
-      font-weight: 700;
-      cursor:pointer;
-      transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
-      box-shadow: 0 14px 30px rgba(124,92,255,.22);
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      padding: 0 16px;
-      min-width: 128px;
-    }
-    button:hover{ transform: translateY(-1px); }
-    button:disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; transform:none; }
-
-    .uploadBtn{
-      min-width: 160px;
-      background: rgba(255,255,255,.08);
-      border:1px solid rgba(255,255,255,.14);
-      box-shadow:none;
-      color: var(--text);
-      font-weight: 650;
-    }
-    .uploadBtn:hover{ transform: translateY(-1px); }
-    .uploadBtn small{ color: var(--muted); font-weight: 600; }
-
-    .hidden{ display:none; }
-
-    @media (max-width: 680px){
-      .wrap{ padding: 12px; }
-      .right .pill{ display:none; }
-      .msg{ max-width: 92%; }
-      button{ min-width: 110px; }
-      .uploadBtn{ min-width: 140px; }
-    }
-  </style>
+@media(max-width:600px){
+  .msg{max-width:92%;}
+}
+</style>
 </head>
 
 <body>
-  <div class="wrap">
-    <header>
-      <div class="brand">
-        <div class="dot"></div>
-        <div style="min-width:0">
-          <h1>Edamame Brain</h1>
-          <p>Smart. Bold. Deep strategy.</p>
-        </div>
-      </div>
+<div class="wrap">
 
-      <div class="right">
-        <div id="status" class="pill">No product image</div>
-        <div id="sessionPill" class="pill">Session: …</div>
-      </div>
-    </header>
-
-    <div id="chat" class="chat"></div>
-
-    <div class="bar">
-      <input id="file" class="hidden" type="file" accept="image/*"/>
-      <button id="upload" class="uploadBtn" type="button">Upload product</button>
-
-      <textarea id="input" placeholder="Type what you want... (e.g. Ramadan hero banner, ecommerce ad, clean studio)"></textarea>
-      <button id="send" type="button">Send</button>
-    </div>
+<header>
+  <div class="brand">
+    <h1>Edamame Brain</h1>
+    <p>Smart. Bold. Deep strategy.</p>
   </div>
+</header>
 
-  <script>
-    // ✅ Session FIRST (before any fetch)
-    const sessionId = localStorage.getItem("edamame_sessionId") || crypto.randomUUID();
-    localStorage.setItem("edamame_sessionId", sessionId);
+<button id="uploadBtn" class="uploadTop">Upload product image</button>
+<input type="file" id="fileInput" accept="image/*" style="display:none"/>
 
-    const chat = document.getElementById("chat");
-    const input = document.getElementById("input");
-    const send = document.getElementById("send");
-    const file = document.getElementById("file");
-    const upload = document.getElementById("upload");
-    const status = document.getElementById("status");
-    const sessionPill = document.getElementById("sessionPill");
+<div id="chat" class="chat"></div>
 
-    sessionPill.textContent = "Session: " + sessionId.slice(0, 8);
+<div class="bar">
+  <textarea id="input" placeholder="Describe what you want..."></textarea>
+  <button id="send" class="sendBtn">Send</button>
+</div>
 
-    let hasProduct = false;
+</div>
 
-    function addMsg(text, cls){
-      const d = document.createElement("div");
-      d.className = "msg " + cls;
-      d.textContent = text;
-      chat.appendChild(d);
-      chat.scrollTop = chat.scrollHeight;
-      return d;
-    }
+<script>
+const sessionId = localStorage.getItem("edamame_sessionId") || crypto.randomUUID();
+localStorage.setItem("edamame_sessionId", sessionId);
 
-    function addImage(b64){
-      const img = document.createElement("img");
-      img.className = "img";
-      img.src = "data:image/png;base64," + b64;
-      chat.appendChild(img);
-      chat.scrollTop = chat.scrollHeight;
-    }
+const chat=document.getElementById("chat");
+const input=document.getElementById("input");
+const send=document.getElementById("send");
+const uploadBtn=document.getElementById("uploadBtn");
+const fileInput=document.getElementById("fileInput");
 
-    function isImageIntent(text){
-      const t = text.toLowerCase();
-      if (t.startsWith("img:")) return true;
-      return (
-        t.includes("ramadan") ||
-        t.includes("banner") ||
-        t.includes("poster") ||
-        t.includes("ad ") ||
-        t.includes("ad-") ||
-        t.includes("hero") ||
-        t.includes("ecommerce") ||
-        t.includes("product shot") ||
-        t.includes("studio") ||
-        t.includes("campaign")
-      );
-    }
+let hasProduct=false;
 
-    async function uploadProduct(fileObj){
-      const waiting = addMsg("Uploading product image…", "sys");
+function addMsg(text,cls){
+  const d=document.createElement("div");
+  d.className="msg "+cls;
+  d.textContent=text;
+  chat.appendChild(d);
+  chat.scrollTop=chat.scrollHeight;
+  return d;
+}
 
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          try{
-            const r = await fetch("/api/product", {
-              method:"POST",
-              headers:{ "Content-Type":"application/json" },
-              body: JSON.stringify({
-                sessionId,
-                imageDataUrl: reader.result
-              })
-            });
+function addImage(b64){
+  const img=document.createElement("img");
+  img.className="img";
+  img.src="data:image/png;base64,"+b64;
+  chat.appendChild(img);
+  chat.scrollTop=chat.scrollHeight;
+}
 
-            const data = await r.json().catch(()=> ({}));
-            if(!r.ok){
-              waiting.className = "msg err";
-              waiting.textContent = data?.message || data?.error || "Upload failed.";
-              return resolve(false);
-            }
-
-            hasProduct = true;
-            status.textContent = "Product image: ready";
-            waiting.textContent = "Product image received. Now type what you want to generate.";
-            return resolve(true);
-
-          }catch(e){
-            waiting.className = "msg err";
-            waiting.textContent = "Upload error. Try again.";
-            return resolve(false);
-          }
-        };
-
-        reader.onerror = () => {
-          waiting.className = "msg err";
-          waiting.textContent = "Couldn’t read image.";
-          resolve(false);
-        };
-
-        reader.readAsDataURL(fileObj);
-      });
-    }
-
-    async function ask(){
-      const text = input.value.trim();
-      if(!text) return;
-
-      input.value = "";
-      send.disabled = true;
-
-      addMsg(text, "me");
-      const waiting = addMsg("…", "ai");
-
-      try{
-        const wantsImage = isImageIntent(text);
-
-        if(wantsImage && !hasProduct){
-          waiting.className = "msg err";
-          waiting.textContent = "Upload a product image first.";
-          return;
-        }
-
-        const endpoint = wantsImage ? "/api/image" : "/api/chat";
-        const payload  = wantsImage
-          ? { sessionId, prompt: text.replace(/^img:\s*/i, "") }
-          : { sessionId, message: text };
-
-        const r = await fetch(endpoint, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await r.json().catch(()=> ({}));
-
-        if(!r.ok){
-          waiting.className = "msg err";
-          waiting.textContent =
-            data?.message ||
-            data?.error ||
-            ("Request failed (" + r.status + ")");
-          return;
-        }
-
-        if(wantsImage){
-          waiting.textContent = "Done.";
-          if(data?.b64) addImage(data.b64);
-          else addMsg("No image returned.", "err");
-        } else {
-          waiting.textContent = data.reply || JSON.stringify(data);
-        }
-
-      }catch(e){
-        waiting.className = "msg err";
-        waiting.textContent = "Network error. Try again.";
-      }finally{
-        send.disabled = false;
-        input.focus();
-      }
-    }
-
-    upload.addEventListener("click", () => file.click());
-    file.addEventListener("change", async (e) => {
-      const f = e.target.files?.[0];
-      if(!f) return;
-      await uploadProduct(f);
-      file.value = "";
+async function uploadProduct(file){
+  const reader=new FileReader();
+  reader.onload=async ()=>{
+    const r=await fetch("/api/product",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({sessionId,imageDataUrl:reader.result})
     });
 
-    send.addEventListener("click", ask);
-    input.addEventListener("keydown", (e)=>{
-      if(e.key === "Enter" && !e.shiftKey){
-        e.preventDefault();
-        ask();
-      }
-    });
+    if(r.ok){
+      hasProduct=true;
+      addMsg("Product image uploaded. Now describe your scene.","ai");
+    }else{
+      addMsg("Upload failed.","err");
+    }
+  };
+  reader.readAsDataURL(file);
+}
 
-    addMsg("Upload a product image, then tell me what you want (ad, Ramadan banner, hero shot, etc.).", "ai");
-  </script>
+async function ask(){
+  const text=input.value.trim();
+  if(!text) return;
+  input.value="";
+  addMsg(text,"me");
+  const waiting=addMsg("…","ai");
+
+  const endpoint=hasProduct?"/api/image":"/api/chat";
+  const payload=hasProduct
+    ? {sessionId,prompt:text}
+    : {sessionId,message:text};
+
+  const r=await fetch(endpoint,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(payload)
+  });
+
+  const data=await r.json();
+  if(!r.ok){
+    waiting.className="msg err";
+    waiting.textContent=data.message||"Error.";
+    return;
+  }
+
+  if(hasProduct){
+    waiting.textContent="Done.";
+    if(data.b64) addImage(data.b64);
+  }else{
+    waiting.textContent=data.reply;
+  }
+}
+
+uploadBtn.onclick=()=>fileInput.click();
+fileInput.onchange=e=>{
+  const f=e.target.files?.[0];
+  if(f) uploadProduct(f);
+};
+
+send.onclick=ask;
+input.onkeydown=e=>{
+  if(e.key==="Enter"&&!e.shiftKey){
+    e.preventDefault();
+    ask();
+  }
+};
+
+addMsg("Upload a product image, then describe what you want to generate.","ai");
+</script>
+
 </body>
 </html>
