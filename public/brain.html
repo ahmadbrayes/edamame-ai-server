@@ -24,11 +24,14 @@ html,body{
   font-family:system-ui, -apple-system, Segoe UI, Roboto;
   background:var(--bg);
   color:var(--text);
-  overflow:auto;
+
+  /* مهم: خلي السكرول داخل الشات مش بالبودي */
+  overflow:hidden;
 }
 
+/* WRAP */
 .wrap{
-  min-height:100vh;
+  height:100dvh;          /* مهم للموبايل */
   width:min(1000px,100%);
   margin:0 auto;
   padding:20px;
@@ -37,6 +40,7 @@ html,body{
   gap:14px;
 }
 
+/* HEADER */
 header{
   display:flex;
   justify-content:space-between;
@@ -61,6 +65,7 @@ header{
   opacity:.7;
 }
 
+/* UPLOAD BUTTON */
 .uploadTop{
   background:var(--green);
   color:white;
@@ -72,13 +77,14 @@ header{
   transition:.2s;
 }
 
-.uploadTop:hover{
-  background:var(--greenDark);
-}
+.uploadTop:hover{ background:var(--greenDark); }
 
+/* CHAT */
 .chat{
   flex:1;
+  min-height:0;                 /* مهم عشان flex يشتغل */
   overflow:auto;
+  -webkit-overflow-scrolling: touch;
   background:white;
   padding:18px;
   border-radius:var(--radius);
@@ -86,6 +92,9 @@ header{
   flex-direction:column;
   gap:12px;
   box-shadow:0 10px 30px rgba(0,0,0,.08);
+
+  /* مساحة تحت عشان البار ما يغطي آخر رسالة */
+  padding-bottom: 90px;
 }
 
 .msg{
@@ -117,11 +126,24 @@ header{
   width:min(500px,100%);
   border-radius:14px;
   margin-top:8px;
+  display:block;
 }
 
+/* INPUT BAR */
 .bar{
   display:flex;
   gap:10px;
+
+  /* ثبته تحت */
+  position:sticky;
+  bottom:0;
+
+  /* نفس خلفية الموقع */
+  background:var(--bg);
+
+  /* مساحة آمنة للموبايل */
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  z-index:10;
 }
 
 textarea{
@@ -132,6 +154,12 @@ textarea{
   border:2px solid var(--green);
   padding:12px;
   font-size:14px;
+
+  background:#fff;
+  color:var(--text);
+
+  /* مهم للموبايل عشان يلتقط اللمس صح */
+  touch-action: manipulation;
 }
 
 textarea:focus{
@@ -149,12 +177,23 @@ textarea:focus{
   cursor:pointer;
 }
 
-.sendBtn:hover{
-  opacity:.9;
+.sendBtn:hover{ opacity:.9; }
+
+/* Download button */
+.dlBtn{
+  background:var(--green);
+  color:white;
+  border:none;
+  padding:8px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:13px;
 }
+.dlBtn:hover{ background:var(--greenDark); }
 
 @media(max-width:600px){
   .msg{max-width:92%;}
+  .wrap{ padding:16px; }
 }
 </style>
 </head>
@@ -223,14 +262,8 @@ function addImage(b64, prompt){
   img.src="data:image/png;base64,"+b64;
 
   const downloadBtn=document.createElement("button");
+  downloadBtn.className="dlBtn";
   downloadBtn.textContent="Download image";
-  downloadBtn.style.background="var(--green)";
-  downloadBtn.style.color="white";
-  downloadBtn.style.border="none";
-  downloadBtn.style.padding="8px 14px";
-  downloadBtn.style.borderRadius="10px";
-  downloadBtn.style.cursor="pointer";
-  downloadBtn.style.fontSize="13px";
 
   downloadBtn.onclick=()=>{
     const a=document.createElement("a");
@@ -270,6 +303,7 @@ async function uploadProduct(file){
 async function ask(){
   const text=input.value.trim();
   if(!text) return;
+
   input.value="";
   addMsg(text,"me");
   const waiting=addMsg("…","ai");
@@ -285,7 +319,7 @@ async function ask(){
     body:JSON.stringify(payload)
   });
 
-  const data=await r.json();
+  const data=await r.json().catch(()=> ({}));
   if(!r.ok){
     waiting.className="msg err";
     waiting.textContent=data.message||"Error.";
@@ -295,26 +329,31 @@ async function ask(){
   if(hasProduct){
     waiting.textContent="Done.";
     if(data.b64) addImage(data.b64, text);
+    else addMsg("No image returned.","err");
   }else{
-    waiting.textContent=data.reply;
+    waiting.textContent=data.reply || "No reply.";
   }
+
+  // رجّع الفوكس للمربع (مهم للموبايل)
+  setTimeout(()=> input.focus(), 50);
 }
 
 uploadBtn.onclick=()=>fileInput.click();
 fileInput.onchange=e=>{
   const f=e.target.files?.[0];
   if(f) uploadProduct(f);
+  fileInput.value="";
 };
 
 send.onclick=ask;
 input.onkeydown=e=>{
-  if(e.key==="Enter"&&!e.shiftKey){
+  if(e.key==="Enter" && !e.shiftKey){
     e.preventDefault();
     ask();
   }
 };
 
-addMsg("Edamame Brain is here to assist you with your content strategy and to create photos for your products.","ai");
+addMsg("Upload a product image, then describe what you want to generate.","ai");
 </script>
 
 </body>
