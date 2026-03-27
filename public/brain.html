@@ -350,7 +350,6 @@ const productThumb = document.getElementById("productThumb");
 const productStatusSub = document.getElementById("productStatusSub");
 
 let hasProduct = false;
-let uploadedProductDataUrl = "";
 
 function slugify(text){
   return (text || "")
@@ -386,16 +385,14 @@ function setProductState(enabled, previewDataUrl = ""){
     uploadBtn.textContent = "Replace product image";
     productStatus.classList.add("show");
     if (previewDataUrl) {
-      uploadedProductDataUrl = previewDataUrl;
       productThumb.src = previewDataUrl;
     }
-    productStatusSub.textContent = "Product uploaded. Backgrounds will be generated around it.";
+    productStatusSub.textContent = "Product uploaded. Now describe your scene.";
   } else {
     uploadBtn.textContent = "Upload product image";
     productStatus.classList.remove("show");
     productThumb.removeAttribute("src");
     productStatusSub.textContent = "";
-    uploadedProductDataUrl = "";
   }
 }
 
@@ -431,72 +428,12 @@ async function watermarkDataUrl(dataUrl){
   });
 }
 
-function loadImage(src){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
-
-async function compositeProductOverBackground(backgroundB64, prompt, meta = {}){
-  if (!uploadedProductDataUrl) {
-    addMsg("No product image available to composite.", "err");
-    return;
-  }
-
-  const backgroundImg = await loadImage("data:image/png;base64," + backgroundB64);
-  const productImg = await loadImage(uploadedProductDataUrl);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = backgroundImg.naturalWidth;
-  canvas.height = backgroundImg.naturalHeight;
-
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
-
-  const maxProductWidth = canvas.width * 0.42;
-  const maxProductHeight = canvas.height * 0.62;
-
-  const productRatio = productImg.naturalWidth / productImg.naturalHeight;
-
-  let drawWidth = maxProductWidth;
-  let drawHeight = drawWidth / productRatio;
-
-  if (drawHeight > maxProductHeight) {
-    drawHeight = maxProductHeight;
-    drawWidth = drawHeight * productRatio;
-  }
-
-  const drawX = (canvas.width - drawWidth) / 2;
-  const drawY = (canvas.height - drawHeight) / 2 - canvas.height * 0.03;
-
-  // Soft shadow
-  ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.22)";
-  ctx.filter = `blur(${Math.max(18, Math.round(canvas.width * 0.012))}px)`;
-  ctx.beginPath();
-  ctx.ellipse(
-    canvas.width / 2,
-    drawY + drawHeight + canvas.height * 0.03,
-    drawWidth * 0.34,
-    Math.max(16, canvas.height * 0.018),
-    0,
-    0,
-    Math.PI * 2
-  );
-  ctx.fill();
-  ctx.restore();
-
-  // Product
-  ctx.drawImage(productImg, drawX, drawY, drawWidth, drawHeight);
-
-  const compositedDataUrl = canvas.toDataURL("image/png");
-  const finalDataUrl = await watermarkDataUrl(compositedDataUrl);
-
+async function addImage(b64, prompt, meta = {}){
   const wrapper = document.createElement("div");
   wrapper.className = "imgWrap";
+
+  const rawDataUrl = "data:image/png;base64," + b64;
+  const finalDataUrl = await watermarkDataUrl(rawDataUrl);
 
   const img = document.createElement("img");
   img.className = "img";
@@ -555,7 +492,7 @@ async function uploadProduct(file){
 
       if (r.ok) {
         setProductState(true, dataUrl);
-        addMsg("Product image uploaded. Now describe the background or scene you want.", "ai");
+        addMsg("Product image uploaded. Now describe your scene.", "ai");
         setTimeout(() => input.focus(), 50);
       } else {
         addMsg(data.message || "Upload failed.", "err");
@@ -604,7 +541,7 @@ async function ask(){
 
   const waiting = addMsg("…", "ai");
 
-  const endpoint = hasProduct ? "/api/background" : "/api/chat";
+  const endpoint = hasProduct ? "/api/image" : "/api/chat";
   const payload = hasProduct
     ? {
         sessionId,
@@ -640,13 +577,13 @@ async function ask(){
       ].filter(Boolean).join(" • ");
 
       if (data.b64) {
-        await compositeProductOverBackground(data.b64, text, {
+        await addImage(data.b64, text, {
           aspect: data.aspect,
           size: data.size,
           remainingToday: data.remainingToday
         });
       } else {
-        addMsg("No background returned.", "err");
+        addMsg("No image returned.", "err");
       }
     } else {
       waiting.textContent = data.reply || "No reply.";
