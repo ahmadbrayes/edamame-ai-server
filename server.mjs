@@ -2,11 +2,12 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 import OpenAI from "openai";
+import { toFile } from "openai/uploads";
 
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "12mb" }));
+app.use(express.json({ limit: "10mb" }));
 app.use(express.static("public"));
 
 app.get("/", (req, res) => res.redirect("/brain.html"));
@@ -28,7 +29,7 @@ const sessionMeta = {};
 ========================= */
 const PORT = process.env.PORT || 3000;
 const MAX_CHAT_HISTORY = 12;
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24h
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
 const DAILY_IMAGE_LIMIT = 2;
 
 const ALLOWED_IMAGE_MIMES = new Set([
@@ -54,6 +55,14 @@ VOICE
 
 ROLE
 Help users create high-performing content that drives attention, authority, inbound demand, and revenue.
+
+CAPABILITIES
+- Content strategy
+- Campaign ideas
+- Social media planning
+- Content calendars
+- Creative directions
+- Marketing visuals
 
 RULES
 1) Answer immediately.
@@ -95,7 +104,7 @@ function getSessionId(req, res) {
   return sessionId;
 }
 
-function parseDataUrl(dataUrl) {
+function parseDataUrlToBuffer(dataUrl) {
   const match = String(dataUrl || "").match(
     /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/
   );
@@ -109,8 +118,8 @@ function parseDataUrl(dataUrl) {
 
   try {
     const buffer = Buffer.from(b64, "base64");
-    if (!buffer.length) return null;
-    return { mime, buffer, b64 };
+    if (!buffer || !buffer.length) return null;
+    return { mime, buffer };
   } catch {
     return null;
   }
@@ -172,17 +181,21 @@ CRITICAL RULES:
 - Do NOT recreate the product.
 - Do NOT change the logo.
 - Do NOT change any text.
-- Do NOT change spelling, typography, or label layout.
+- Do NOT change spelling, typography, label layout, or branding.
 - Do NOT alter brand identity in any way.
-- The logo and text must remain perfectly readable and identical.
+- The logo and text must remain readable and as close to the original as possible.
+- Do NOT change product shape, size, proportions, colors, or packaging structure.
+- Do NOT restyle the product.
 
 EDIT SCOPE:
 - Improve the background and environment.
-- Enhance lighting in a natural and realistic way.
-- You may enhance overall scene lighting, but DO NOT relight or repaint the product surface.
-- Keep changes subtle and premium.
+- Enhance the image in a natural and realistic way.
+- You may improve overall scene lighting, but do NOT repaint the product surface.
+- Keep changes subtle, premium, and commercially clean.
 - Avoid over-stylization.
 - Avoid dramatic transformations.
+- Avoid heavy reflections on the label.
+- Avoid replacing packaging details.
 
 STYLE:
 - Clean
@@ -193,49 +206,17 @@ STYLE:
 
 IMPORTANT:
 - This must look like the SAME original product placed in a better environment.
-- The product must NOT look AI-generated.
-
-OUTPUT:
-- Respect aspect ratio (${aspect})
-- Keep the product centered and dominant
+- The product must NOT look newly generated.
+- Keep the product centered and visually dominant.
+- Respect aspect ratio (${aspect}).
 
 USER REQUEST:
 ${userPrompt}
-`;
-}
-
-function inferLightDirection(userPrompt) {
-  const text = String(userPrompt || "").toLowerCase();
-
-  if (
-    text.includes("left") ||
-    text.includes("من اليسار") ||
-    text.includes("يسار")
-  ) {
-    return "left";
-  }
-
-  if (
-    text.includes("right") ||
-    text.includes("من اليمين") ||
-    text.includes("يمين")
-  ) {
-    return "right";
-  }
-
-  if (
-    text.includes("backlight") ||
-    text.includes("خلف") ||
-    text.includes("خلفية ضوء")
-  ) {
-    return "back";
-  }
-
-  return "right";
+`.trim();
 }
 
 /* =========================
-   Cleanup
+   Cleanup job
 ========================= */
 setInterval(cleanupExpiredSessions, 1000 * 60 * 60);
 
@@ -267,7 +248,7 @@ app.post("/api/product", (req, res) => {
       });
     }
 
-    const parsed = parseDataUrl(dataUrl);
+    const parsed = parseDataUrlToBuffer(dataUrl);
     if (!parsed) {
       return res.status(400).json({
         error: "INVALID_IMAGE",
@@ -320,7 +301,7 @@ app.post("/api/chat", async (req, res) => {
       model: "gpt-4.1-mini",
       input: conversations[sessionId],
       temperature: 0.7,
-      max_output_tokens: 500,
+      max_output_tokens: 700,
     });
 
     const aiReply =
@@ -347,15 +328,15 @@ app.post("/api/chat", async (req, res) => {
 });
 
 /* =========================
-   Generate Background Only
+   Image Edit
 ========================= */
-app.post("/api/background", async (req, res) => {
+app.post("/api/image", async (req, res) => {
   try {
     const sessionId = getSessionId(req, res);
     if (!sessionId) return;
 
     const userPrompt = String(req.body?.prompt || "").trim();
-    const aspect = normalizeAspect(req.body?.aspect);
+    const requestedAspect = normalizeAspect(req.body?.aspect);
 
     if (!userPrompt) {
       return res.status(400).json({
@@ -380,23 +361,35 @@ app.post("/api/background", async (req, res) => {
       });
     }
 
-    const size = OPENAI_SIZE_MAP[aspect];
+    const parsed = parseDataUrlToBuffer(productDataUrl);
+    if (!parsed) {
+      return res.status(400).json({
+        error: "INVALID_IMAGE_DATA",
+        message: "Stored product image is invalid. Re-upload it.",
+      });
+    }
+
+    const size = OPENAI_SIZE_MAP[requestedAspect];
     const prompt = buildEditPrompt(userPrompt, requestedAspect);
 
-const result = await client.images.edit({
-  model: "gpt-image-1.5",
-  image: file,
-  prompt,
-  size,
-  output_format: "png",
-});
+    const file = await toFile(parsed.buffer, "product.png", {
+      type: parsed.mime,
+    });
+
+    const result = await client.images.edit({
+      model: "gpt-image-1.5",
+      image: file,
+      prompt,
+      size,
+      output_format: "png",
+    });
 
     const b64 = result?.data?.[0]?.b64_json;
 
     if (!b64) {
       return res.status(500).json({
         error: "NO_IMAGE_RETURNED",
-        message: "No background returned from the model.",
+        message: "No image returned from the model.",
       });
     }
 
@@ -404,15 +397,14 @@ const result = await client.images.edit({
 
     return res.json({
       b64,
-      aspect,
+      aspect: requestedAspect,
       size,
-      lightDirection: inferLightDirection(userPrompt),
       remainingToday: Math.max(0, DAILY_IMAGE_LIMIT - usage.count),
     });
   } catch (error) {
-    console.error("BACKGROUND ERROR:", error);
+    console.error("IMAGE ERROR:", error);
     return res.status(500).json({
-      error: "BACKGROUND_ERROR",
+      error: "IMAGE_ERROR",
       message: String(error?.message || error),
     });
   }
