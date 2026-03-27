@@ -193,55 +193,87 @@ function buildSmartEditPrompt({ userPrompt, analysis, finalAspect }) {
   const tone = cleanShortText(analysis?.tone, "premium");
   const composition = cleanShortText(
     analysis?.composition,
-    "clear product visibility, balanced framing, commercially usable composition"
+    "centered product with clear visibility"
   );
   const background = cleanShortText(
     analysis?.background,
-    "clean refined background relevant to the request"
+    "clean minimal background"
   );
   const lighting = cleanShortText(
     analysis?.lighting,
-    "realistic polished lighting with natural shadows and reflections"
+    "soft realistic lighting"
   );
   const extraDirectives = cleanShortText(
     analysis?.extraDirectives,
-    "keep the scene premium, realistic, and ad-ready"
+    "keep it realistic and commercially usable"
   );
 
   return `
-You are performing a PRODUCT-LOCKED EDIT.
+You are performing a STRICT PRODUCT LOCKED EDIT.
 
-ABSOLUTE RULES:
-- Use the EXACT product in the provided image.
-- Do NOT replace the product.
-- Do NOT change shape, color, logo, proportions, packaging structure, or brand identity.
-- Preserve all visible branding and packaging text exactly as shown.
-- Do not invent missing product details.
-- Keep the product realistic and commercially usable.
-- Only modify environment, background, styling, mood, scene composition, reflections, and lighting.
-- Maintain realism, correct perspective, and proper product proportions.
-- This is an image edit, not a new product generation.
+CRITICAL INSTRUCTIONS (NON-NEGOTIABLE):
+
+- The product in the image MUST remain EXACTLY the same.
+- DO NOT redraw the product.
+- DO NOT recreate the product.
+- DO NOT reinterpret the product.
+
+LOGO & TEXT RULES (ABSOLUTE):
+
+- DO NOT change the logo in ANY way.
+- DO NOT change ANY text on the product.
+- DO NOT modify letters, spelling, font, size, spacing, or alignment.
+- DO NOT blur, stylize, enhance, or replace text.
+- DO NOT generate new text.
+- DO NOT "improve" the logo.
+- DO NOT fix or redesign branding.
+
+IF the model cannot preserve the logo and text PERFECTLY:
+→ KEEP THE ORIGINAL EXACTLY AS IS
+→ DO NOT TOUCH IT
+
+PRODUCT PRESERVATION:
+
+- Keep EXACT shape, proportions, colors, materials, reflections, and label.
+- Keep ALL packaging details unchanged.
+- Treat the product as LOCKED and UNEDITABLE.
+- The product must look IDENTICAL to the original input.
+
+WHAT YOU ARE ALLOWED TO CHANGE:
+
+- Background
+- Environment
+- Scene composition
+- Lighting
+- Shadows
+- Reflections around the product (NOT on the label itself)
 
 CREATIVE DIRECTION:
+
 - Output type: ${outputType}
-- Platform intent: ${platform}
+- Platform: ${platform}
 - Style: ${style}
 - Tone: ${tone}
 - Composition: ${composition}
-- Background direction: ${background}
-- Lighting direction: ${lighting}
-- Extra direction: ${extraDirectives}
+- Background: ${background}
+- Lighting: ${lighting}
+- Extra: ${extraDirectives}
 
-OUTPUT FRAMING:
-- Respect the requested aspect ratio (${finalAspect}).
-- Compose the scene accordingly.
-- Keep the product clearly visible and visually important.
-- Make the final image feel polished, premium, and ad-ready.
+FRAMING:
+
+- Respect aspect ratio (${finalAspect})
+- Keep product clear, centered, and dominant
+- Do not crop or distort the product
+
+FINAL RULE:
+
+The PRODUCT (especially logo and text) must look like a DIRECT COPY from the original image — not regenerated.
 
 USER REQUEST:
 ${userPrompt}
 `.trim();
 }
+
 
 /* =========================
    AI Intent Analyzer
