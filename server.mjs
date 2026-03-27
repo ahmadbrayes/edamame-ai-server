@@ -162,29 +162,46 @@ function normalizeAspect(value) {
   return OPENAI_SIZE_MAP[aspect] ? aspect : "auto";
 }
 
-function buildBackgroundPrompt(userPrompt) {
+function buildEditPrompt(userPrompt, aspect) {
   return `
-Create a premium commercial background for product photography.
+You are editing a real product image.
 
-STRICT RULES:
-- Do NOT generate any product.
-- Do NOT generate any bottle, box, device, jar, packaging, or container.
-- Do NOT generate any logo.
-- Do NOT generate any text.
-- Keep the center area clear and visually usable for placing a product.
-- The result must feel premium, realistic, and commercially polished.
+CRITICAL RULES:
+- Keep the product EXACTLY the same.
+- Do NOT redesign the product.
+- Do NOT recreate the product.
+- Do NOT change the logo.
+- Do NOT change any text.
+- Do NOT change spelling, typography, or label layout.
+- Do NOT alter brand identity in any way.
+- The logo and text must remain perfectly readable and identical.
 
-VISUAL GOAL:
-- Elegant composition
-- Premium depth
-- Clean marketing look
-- Natural lighting direction
-- Ad-ready environment
-- Refined luxury feel if relevant to the request
+EDIT SCOPE:
+- Improve the background and environment.
+- Enhance lighting in a natural and realistic way.
+- You may enhance overall scene lighting, but DO NOT relight or repaint the product surface.
+- Keep changes subtle and premium.
+- Avoid over-stylization.
+- Avoid dramatic transformations.
+
+STYLE:
+- Clean
+- Premium
+- Commercial
+- Ad-ready
+- Realistic
+
+IMPORTANT:
+- This must look like the SAME original product placed in a better environment.
+- The product must NOT look AI-generated.
+
+OUTPUT:
+- Respect aspect ratio (${aspect})
+- Keep the product centered and dominant
 
 USER REQUEST:
 ${userPrompt}
-`.trim();
+`;
 }
 
 function inferLightDirection(userPrompt) {
@@ -364,14 +381,15 @@ app.post("/api/background", async (req, res) => {
     }
 
     const size = OPENAI_SIZE_MAP[aspect];
-    const prompt = buildBackgroundPrompt(userPrompt);
+    const prompt = buildEditPrompt(userPrompt, requestedAspect);
 
-    const result = await client.images.generate({
-      model: "gpt-image-1.5",
-      prompt,
-      size,
-      output_format: "png",
-    });
+const result = await client.images.edit({
+  model: "gpt-image-1.5",
+  image: file,
+  prompt,
+  size,
+  output_format: "png",
+});
 
     const b64 = result?.data?.[0]?.b64_json;
 
