@@ -2,12 +2,11 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 import OpenAI from "openai";
-import { toFile } from "openai/uploads";
 
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "12mb" }));
 app.use(express.static("public"));
 
 app.get("/", (req, res) => res.redirect("/brain.html"));
@@ -29,7 +28,7 @@ const sessionMeta = {};
 ========================= */
 const PORT = process.env.PORT || 3000;
 const MAX_CHAT_HISTORY = 12;
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24h
 const DAILY_IMAGE_LIMIT = 2;
 
 const ALLOWED_IMAGE_MIMES = new Set([
@@ -96,7 +95,7 @@ function getSessionId(req, res) {
   return sessionId;
 }
 
-function parseDataUrlToBuffer(dataUrl) {
+function parseDataUrl(dataUrl) {
   const match = String(dataUrl || "").match(
     /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/
   );
@@ -110,8 +109,8 @@ function parseDataUrlToBuffer(dataUrl) {
 
   try {
     const buffer = Buffer.from(b64, "base64");
-    if (!buffer || !buffer.length) return null;
-    return { mime, buffer };
+    if (!buffer.length) return null;
+    return { mime, buffer, b64 };
   } catch {
     return null;
   }
@@ -163,42 +162,63 @@ function normalizeAspect(value) {
   return OPENAI_SIZE_MAP[aspect] ? aspect : "auto";
 }
 
-function buildStrictEditPrompt(userPrompt, aspect) {
+function buildBackgroundPrompt(userPrompt) {
   return `
-Edit this image with extreme care.
+Create a premium commercial background for product photography.
 
-CRITICAL RULES:
-- Keep the product EXACTLY as it is.
-- Do NOT redraw the product.
-- Do NOT recreate the product.
-- Do NOT modify the logo.
-- Do NOT modify any text.
-- Do NOT modify label, typography, branding, packaging layout, or spelling.
-- Do NOT change product shape, proportions, size, or colors.
-- Do NOT restyle the product.
+STRICT RULES:
+- Do NOT generate any product.
+- Do NOT generate any bottle, box, device, jar, packaging, or container.
+- Do NOT generate any logo.
+- Do NOT generate any text.
+- Keep the center area clear and visually usable for placing a product.
+- The result must feel premium, realistic, and commercially polished.
 
-ALLOWED EDITS ONLY:
-- Improve the background and surrounding environment.
-- Make subtle scene improvements only.
-- Use clean, natural, commercial styling.
-- Apply only very light lighting improvement around the scene.
-- Do NOT relight the product directly.
-- Do NOT create strong reflections on the product label.
-- Avoid dramatic edits.
-
-OUTPUT:
-- Respect the requested aspect ratio (${aspect}).
-- Keep the product clear and dominant.
-- Maintain realism.
-- The product must look identical to the original input.
+VISUAL GOAL:
+- Elegant composition
+- Premium depth
+- Clean marketing look
+- Natural lighting direction
+- Ad-ready environment
+- Refined luxury feel if relevant to the request
 
 USER REQUEST:
 ${userPrompt}
 `.trim();
 }
 
+function inferLightDirection(userPrompt) {
+  const text = String(userPrompt || "").toLowerCase();
+
+  if (
+    text.includes("left") ||
+    text.includes("من اليسار") ||
+    text.includes("يسار")
+  ) {
+    return "left";
+  }
+
+  if (
+    text.includes("right") ||
+    text.includes("من اليمين") ||
+    text.includes("يمين")
+  ) {
+    return "right";
+  }
+
+  if (
+    text.includes("backlight") ||
+    text.includes("خلف") ||
+    text.includes("خلفية ضوء")
+  ) {
+    return "back";
+  }
+
+  return "right";
+}
+
 /* =========================
-   Cleanup job
+   Cleanup
 ========================= */
 setInterval(cleanupExpiredSessions, 1000 * 60 * 60);
 
@@ -214,7 +234,7 @@ app.get("/health", (req, res) => {
 });
 
 /* =========================
-   1) Upload Product Image
+   Upload Product
 ========================= */
 app.post("/api/product", (req, res) => {
   try {
@@ -230,7 +250,7 @@ app.post("/api/product", (req, res) => {
       });
     }
 
-    const parsed = parseDataUrlToBuffer(dataUrl);
+    const parsed = parseDataUrl(dataUrl);
     if (!parsed) {
       return res.status(400).json({
         error: "INVALID_IMAGE",
@@ -254,7 +274,7 @@ app.post("/api/product", (req, res) => {
 });
 
 /* =========================
-   2) Chat
+   Chat
 ========================= */
 app.post("/api/chat", async (req, res) => {
   try {
@@ -310,15 +330,15 @@ app.post("/api/chat", async (req, res) => {
 });
 
 /* =========================
-   3) Image Edit
+   Generate Background Only
 ========================= */
-app.post("/api/image", async (req, res) => {
+app.post("/api/background", async (req, res) => {
   try {
     const sessionId = getSessionId(req, res);
     if (!sessionId) return;
 
     const userPrompt = String(req.body?.prompt || "").trim();
-    const requestedAspect = normalizeAspect(req.body?.aspect);
+    const aspect = normalizeAspect(req.body?.aspect);
 
     if (!userPrompt) {
       return res.status(400).json({
@@ -343,24 +363,11 @@ app.post("/api/image", async (req, res) => {
       });
     }
 
-    const parsed = parseDataUrlToBuffer(productDataUrl);
-    if (!parsed) {
-      return res.status(400).json({
-        error: "INVALID_IMAGE_DATA",
-        message: "Stored product image is invalid. Re-upload it.",
-      });
-    }
+    const size = OPENAI_SIZE_MAP[aspect];
+    const prompt = buildBackgroundPrompt(userPrompt);
 
-    const size = OPENAI_SIZE_MAP[requestedAspect];
-    const prompt = buildStrictEditPrompt(userPrompt, requestedAspect);
-
-    const file = await toFile(parsed.buffer, "product.png", {
-      type: parsed.mime,
-    });
-
-    const result = await client.images.edit({
-      model: "gpt-image-1",
-      image: file,
+    const result = await client.images.generate({
+      model: "gpt-image-1.5",
       prompt,
       size,
       output_format: "png",
@@ -371,7 +378,7 @@ app.post("/api/image", async (req, res) => {
     if (!b64) {
       return res.status(500).json({
         error: "NO_IMAGE_RETURNED",
-        message: "No image returned from the model.",
+        message: "No background returned from the model.",
       });
     }
 
@@ -379,21 +386,22 @@ app.post("/api/image", async (req, res) => {
 
     return res.json({
       b64,
-      aspect: requestedAspect,
+      aspect,
       size,
+      lightDirection: inferLightDirection(userPrompt),
       remainingToday: Math.max(0, DAILY_IMAGE_LIMIT - usage.count),
     });
   } catch (error) {
-    console.error("IMAGE ERROR:", error);
+    console.error("BACKGROUND ERROR:", error);
     return res.status(500).json({
-      error: "IMAGE_ERROR",
+      error: "BACKGROUND_ERROR",
       message: String(error?.message || error),
     });
   }
 });
 
 /* =========================
-   4) Reset Session
+   Reset
 ========================= */
 app.post("/api/reset", (req, res) => {
   try {
