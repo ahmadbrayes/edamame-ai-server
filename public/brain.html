@@ -288,12 +288,12 @@ textarea:focus{
   <div class="topControls">
     <button id="uploadBtn" class="uploadTop">Upload product image</button>
 
-    <select id="aspect" class="select" title="Aspect ratio">
-      <option value="auto" selected>auto</option>
-      <option value="16:9">16:9</option>
-      <option value="9:16">9:16</option>
-      <option value="1:1">1:1</option>
-    </select>
+   <select id="aspect" class="select" title="Aspect ratio">
+  <option value="auto" selected>auto</option>
+  <option value="16:9">16:9</option>
+  <option value="9:16">9:16</option>
+  <option value="1:1">1:1</option>
+</select>
 
     <button id="resetBtn" class="resetTop" type="button">Reset session</button>
   </div>
@@ -633,7 +633,7 @@ async function uploadProduct(file){
 
       if (r.ok) {
         setProductState(true, dataUrl);
-        addMsg("Product image uploaded. Now describe the background you want.", "ai");
+        addMsg("Product image uploaded. Now describe the picture you want.", "ai");
         setTimeout(() => input.focus(), 50);
       } else {
         addMsg(data.message || "Upload failed.", "err");
@@ -682,7 +682,7 @@ async function ask(){
 
   const waiting = addMsg("…", "ai");
 
-  const endpoint = hasProduct ? "/api/background" : "/api/chat";
+  const endpoint = hasProduct ? "/api/image" : "/api/chat";
   const payload = hasProduct
     ? {
         sessionId,
