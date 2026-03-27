@@ -46,12 +46,6 @@ header{
   gap:12px;
 }
 
-.brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
 .brand h1{
   margin:0;
   font-size:22px;
@@ -109,19 +103,13 @@ header{
   -webkit-appearance:none;
   -moz-appearance:none;
   padding-right:36px;
-  position:relative;
   background-image:
     linear-gradient(45deg, transparent 50%, rgba(255,255,255,.95) 50%),
-    linear-gradient(135deg, rgba(255,255,255,.95) 50%, transparent 50%),
-    linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0));
+    linear-gradient(135deg, rgba(255,255,255,.95) 50%, transparent 50%);
   background-position:
     calc(100% - 18px) 18px,
-    calc(100% - 12px) 18px,
-    0 0;
-  background-size:
-    6px 6px,
-    6px 6px,
-    100% 100%;
+    calc(100% - 12px) 18px;
+  background-size:6px 6px, 6px 6px;
   background-repeat:no-repeat;
 }
 .select:focus{
@@ -168,7 +156,6 @@ header{
   opacity:.75;
 }
 
-/* CHAT */
 .chat{
   flex:1;
   min-height:0;
@@ -219,7 +206,7 @@ header{
 }
 
 .img{
-  width:min(500px,100%);
+  width:min(520px,100%);
   border-radius:14px;
   margin-top:8px;
   display:block;
@@ -243,7 +230,6 @@ header{
   background:var(--greenDark);
 }
 
-/* INPUT BAR */
 .bar{
   display:flex;
   gap:10px;
@@ -305,23 +291,19 @@ textarea:focus{
 
   <header>
     <div class="brand">
-      <div>
-        <h1>Edamame Brain</h1>
-        <p>Smart. Bold. Deep strategy.</p>
-      </div>
+      <h1>Edamame Brain</h1>
+      <p>Smart. Bold. Deep strategy.</p>
     </div>
   </header>
 
   <div class="topControls">
     <button id="uploadBtn" class="uploadTop">Upload product image</button>
 
-    <select id="aspect" class="select" title="Format">
-      <option value="" selected>Format</option>
-      <option value="4:5">Post (Instagram)</option>
-      <option value="9:16">Story / Reel</option>
-      <option value="1:1">Square</option>
-      <option value="16:9">Landscape</option>
-      <option value="3:4">Poster</option>
+    <select id="aspect" class="select" title="Aspect ratio">
+      <option value="auto" selected>auto</option>
+      <option value="16:9">16:9</option>
+      <option value="9:16">9:16</option>
+      <option value="1:1">1:1</option>
     </select>
 
     <button id="resetBtn" class="resetTop" type="button">Reset session</button>
@@ -368,6 +350,7 @@ const productThumb = document.getElementById("productThumb");
 const productStatusSub = document.getElementById("productStatusSub");
 
 let hasProduct = false;
+let uploadedProductDataUrl = "";
 
 function slugify(text){
   return (text || "")
@@ -403,14 +386,16 @@ function setProductState(enabled, previewDataUrl = ""){
     uploadBtn.textContent = "Replace product image";
     productStatus.classList.add("show");
     if (previewDataUrl) {
+      uploadedProductDataUrl = previewDataUrl;
       productThumb.src = previewDataUrl;
     }
-    productStatusSub.textContent = "Product uploaded. Describe your visual.";
+    productStatusSub.textContent = "Product uploaded. Backgrounds will be generated around it.";
   } else {
     uploadBtn.textContent = "Upload product image";
     productStatus.classList.remove("show");
     productThumb.removeAttribute("src");
     productStatusSub.textContent = "";
+    uploadedProductDataUrl = "";
   }
 }
 
@@ -446,12 +431,72 @@ async function watermarkDataUrl(dataUrl){
   });
 }
 
-async function addImage(b64, prompt, meta = {}){
+function loadImage(src){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function compositeProductOverBackground(backgroundB64, prompt, meta = {}){
+  if (!uploadedProductDataUrl) {
+    addMsg("No product image available to composite.", "err");
+    return;
+  }
+
+  const backgroundImg = await loadImage("data:image/png;base64," + backgroundB64);
+  const productImg = await loadImage(uploadedProductDataUrl);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = backgroundImg.naturalWidth;
+  canvas.height = backgroundImg.naturalHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+
+  const maxProductWidth = canvas.width * 0.42;
+  const maxProductHeight = canvas.height * 0.62;
+
+  const productRatio = productImg.naturalWidth / productImg.naturalHeight;
+
+  let drawWidth = maxProductWidth;
+  let drawHeight = drawWidth / productRatio;
+
+  if (drawHeight > maxProductHeight) {
+    drawHeight = maxProductHeight;
+    drawWidth = drawHeight * productRatio;
+  }
+
+  const drawX = (canvas.width - drawWidth) / 2;
+  const drawY = (canvas.height - drawHeight) / 2 - canvas.height * 0.03;
+
+  // Soft shadow
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.filter = `blur(${Math.max(18, Math.round(canvas.width * 0.012))}px)`;
+  ctx.beginPath();
+  ctx.ellipse(
+    canvas.width / 2,
+    drawY + drawHeight + canvas.height * 0.03,
+    drawWidth * 0.34,
+    Math.max(16, canvas.height * 0.018),
+    0,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+  ctx.restore();
+
+  // Product
+  ctx.drawImage(productImg, drawX, drawY, drawWidth, drawHeight);
+
+  const compositedDataUrl = canvas.toDataURL("image/png");
+  const finalDataUrl = await watermarkDataUrl(compositedDataUrl);
+
   const wrapper = document.createElement("div");
   wrapper.className = "imgWrap";
-
-  const rawDataUrl = "data:image/png;base64," + b64;
-  const finalDataUrl = await watermarkDataUrl(rawDataUrl);
 
   const img = document.createElement("img");
   img.className = "img";
@@ -461,7 +506,8 @@ async function addImage(b64, prompt, meta = {}){
   const metaLine = document.createElement("div");
   metaLine.className = "imgMeta";
   metaLine.textContent = [
-    meta.aspect ? `Format: ${meta.aspect}` : "",
+    meta.aspect ? `Aspect: ${meta.aspect}` : "",
+    meta.size ? `Size: ${meta.size}` : "",
     Number.isFinite(meta.remainingToday) ? `Remaining today: ${meta.remainingToday}` : ""
   ].filter(Boolean).join(" • ");
 
@@ -509,7 +555,7 @@ async function uploadProduct(file){
 
       if (r.ok) {
         setProductState(true, dataUrl);
-        addMsg("Product image uploaded. Now describe your scene.", "ai");
+        addMsg("Product image uploaded. Now describe the background or scene you want.", "ai");
         setTimeout(() => input.focus(), 50);
       } else {
         addMsg(data.message || "Upload failed.", "err");
@@ -539,7 +585,7 @@ async function resetSession(){
 
     chat.innerHTML = "";
     setProductState(false);
-    aspectSel.value = "";
+    aspectSel.value = "auto";
     addMsg("Session reset. You can start fresh.", "ai");
     addMsg("Ask for content strategy — or upload your product and create powerful marketing visuals.", "ai");
     setTimeout(() => input.focus(), 50);
@@ -558,7 +604,7 @@ async function ask(){
 
   const waiting = addMsg("…", "ai");
 
-  const endpoint = hasProduct ? "/api/image" : "/api/chat";
+  const endpoint = hasProduct ? "/api/background" : "/api/chat";
   const payload = hasProduct
     ? {
         sessionId,
@@ -588,17 +634,19 @@ async function ask(){
     if (hasProduct) {
       waiting.textContent = [
         "Done.",
-        data.aspect ? `Format: ${data.aspect}` : "",
+        data.aspect ? `Aspect: ${data.aspect}` : "",
+        data.size ? `Size: ${data.size}` : "",
         Number.isFinite(data.remainingToday) ? `Remaining today: ${data.remainingToday}` : ""
       ].filter(Boolean).join(" • ");
 
       if (data.b64) {
-        await addImage(data.b64, text, {
+        await compositeProductOverBackground(data.b64, text, {
           aspect: data.aspect,
+          size: data.size,
           remainingToday: data.remainingToday
         });
       } else {
-        addMsg("No image returned.", "err");
+        addMsg("No background returned.", "err");
       }
     } else {
       waiting.textContent = data.reply || "No reply.";
