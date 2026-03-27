@@ -32,12 +32,23 @@ const MAX_CHAT_HISTORY = 12;
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
 const DAILY_IMAGE_LIMIT = 2;
 
+/*
+OpenAI image sizes supported:
+- 1024x1024
+- 1024x1536
+- 1536x1024
+- auto
+
+مهم:
+4:5 و 3:4 مش مدعومات حرفيًا.
+عشان هيك نقربهم لأقرب عمودي مدعوم.
+*/
 const ALLOWED_ASPECTS = {
   "16:9": "1536x1024",
   "9:16": "1024x1536",
   "1:1": "1024x1024",
-  "4:5": "1024x1280",
-  "3:4": "1024x1365",
+  "4:5": "1024x1536",
+  "3:4": "1024x1536",
 };
 
 const ALLOWED_IMAGE_MIMES = new Set([
@@ -159,166 +170,50 @@ function cleanupExpiredSessions() {
   }
 }
 
-function safeJsonParse(text, fallback = null) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return fallback;
-  }
-}
-
 function normalizeAspect(aspect) {
   const a = String(aspect || "").trim();
-  return ALLOWED_ASPECTS[a] ? a : null;
+  return ALLOWED_ASPECTS[a] ? a : "";
 }
 
-function cleanShortText(value, fallback = "") {
-  return String(value || "").trim().replace(/\s+/g, " ") || fallback;
-}
-
-function clampAspectFromIntent(intentAspect, requestedAspect) {
-  const manualAspect = normalizeAspect(requestedAspect);
-  if (manualAspect) return manualAspect;
-
-  const aiAspect = normalizeAspect(intentAspect);
-  if (aiAspect) return aiAspect;
-
-  return "16:9";
-}
-
-function buildSmartEditPrompt({ userPrompt, analysis, finalAspect }) {
+function buildStrictEditPrompt({ userPrompt, finalAspect }) {
   return `
-You are performing a very light product background edit.
+You are performing a VERY LIGHT PRODUCT BACKGROUND EDIT.
 
-STRICT RULES:
+STRICT NON-NEGOTIABLE RULES:
 - Keep the product EXACTLY as it appears in the original image.
-- Do not redraw the product.
-- Do not modify the logo.
-- Do not modify any text on the packaging.
-- Do not change the product shape, label, proportions, or colors.
-- Do not restyle the product.
-- Only change the background and surrounding environment.
-- Keep the product itself untouched.
-- Maintain realism.
+- Do NOT redraw the product.
+- Do NOT recreate the product.
+- Do NOT reinterpret the product.
+- Do NOT change the logo in any way.
+- Do NOT change any text on the product in any way.
+- Do NOT modify letters, spelling, font, alignment, size, or label layout.
+- Do NOT restyle the packaging.
+- Do NOT alter the product shape, proportions, colors, label, branding, or materials.
+- Keep the product visually untouched.
 
-EDIT STYLE:
-- Make only subtle and controlled scene improvements.
+ALLOWED CHANGES ONLY:
+- Background
+- Environment around the product
+- Very light lighting improvements around the scene
+- Very light shadow/reflection improvements around the scene
+- Subtle composition improvements without changing the product
+
+IMPORTANT:
 - Avoid dramatic changes.
-- Avoid complex reflections on the product.
 - Avoid heavy relighting on the product label.
-- Keep the final result natural and commercially clean.
+- Avoid complex product reflections.
+- Avoid changing the product surface.
+- If preserving the logo/text perfectly is difficult, leave the product untouched.
 
 OUTPUT:
-- Respect aspect ratio (${finalAspect})
-- Keep the product clear and dominant
-- Keep the original product visually unchanged
+- Respect the requested format (${finalAspect || "auto"}).
+- Keep the product clear, centered, and dominant.
+- Maintain realism.
+- Final result should look like the SAME original product placed in a better scene.
 
 USER REQUEST:
 ${userPrompt}
 `.trim();
-}
-
-/* =========================
-   AI Intent Analyzer
-========================= */
-async function analyzeImageIntent(userPrompt) {
-  const analysisPrompt = `
-You analyze user requests for product image editing.
-
-Your task:
-Read the user's request and return JSON only.
-
-You must extract:
-- platform: one short phrase like "instagram feed", "instagram story", "website banner", "generic digital", "ecommerce", "poster", "whatsapp status"
-- aspect: one of exactly these values only: "16:9", "9:16", "1:1", "4:5", "3:4"
-- outputType: one short phrase like "product shot", "ad creative", "hero visual", "lifestyle product visual", "story creative", "ecommerce visual"
-- style: short descriptive phrase
-- tone: short descriptive phrase
-- composition: short phrase about framing/composition
-- background: short phrase about background/environment
-- lighting: short phrase about lighting
-- extraDirectives: short phrase with any extra useful creative direction
-
-Rules:
-- Return valid JSON only.
-- Do not include markdown.
-- Do not explain.
-- If the user does not specify platform, infer the most likely one.
-- If the user says story / reel / status, prefer "9:16".
-- If the user says instagram / insta without story, prefer "4:5".
-- If the user says post / square, prefer "1:1".
-- If the user says portrait ad or poster-like vertical, prefer "3:4".
-- If unclear, use "16:9".
-- Keep every field concise.
-
-User request:
-"${userPrompt}"
-`.trim();
-
-  try {
-    const response = await client.responses.create({
-      model: "gpt-4.1-mini",
-      input: analysisPrompt,
-      temperature: 0.2,
-      max_output_tokens: 300,
-    });
-
-    const raw = String(response?.output_text || "").trim();
-
-    const parsed = safeJsonParse(raw, null);
-
-    if (!parsed || typeof parsed !== "object") {
-      return {
-        platform: "generic digital",
-        aspect: "16:9",
-        outputType: "product shot",
-        style: "clean commercial",
-        tone: "premium",
-        composition: "balanced product-focused framing",
-        background: "clean refined environment",
-        lighting: "realistic polished lighting",
-        extraDirectives: "keep it commercially usable",
-      };
-    }
-
-    return {
-      platform: cleanShortText(parsed.platform, "generic digital"),
-      aspect: normalizeAspect(parsed.aspect) || "16:9",
-      outputType: cleanShortText(parsed.outputType, "product shot"),
-      style: cleanShortText(parsed.style, "clean commercial"),
-      tone: cleanShortText(parsed.tone, "premium"),
-      composition: cleanShortText(
-        parsed.composition,
-        "balanced product-focused framing"
-      ),
-      background: cleanShortText(
-        parsed.background,
-        "clean refined environment"
-      ),
-      lighting: cleanShortText(
-        parsed.lighting,
-        "realistic polished lighting"
-      ),
-      extraDirectives: cleanShortText(
-        parsed.extraDirectives,
-        "keep it commercially usable"
-      ),
-    };
-  } catch (error) {
-    console.error("INTENT ANALYSIS ERROR:", error);
-
-    return {
-      platform: "generic digital",
-      aspect: "16:9",
-      outputType: "product shot",
-      style: "clean commercial",
-      tone: "premium",
-      composition: "balanced product-focused framing",
-      background: "clean refined environment",
-      lighting: "realistic polished lighting",
-      extraDirectives: "keep it commercially usable",
-    };
-  }
 }
 
 /* =========================
@@ -478,25 +373,12 @@ app.post("/api/image", async (req, res) => {
       });
     }
 
-    // 1) Analyze intent with AI
-    const analysis = await analyzeImageIntent(userPrompt);
+    const finalAspect = normalizeAspect(requestedAspect);
+    const size = finalAspect ? ALLOWED_ASPECTS[finalAspect] : "auto";
 
-    // 2) Respect manual aspect if UI sent one; otherwise use AI-detected aspect
-    const finalAspect = clampAspectFromIntent(analysis.aspect, requestedAspect);
-    const size = ALLOWED_ASPECTS[finalAspect];
-
-    if (!size) {
-      return res.status(400).json({
-        error: "INVALID_ASPECT",
-        message: "Unsupported aspect ratio.",
-      });
-    }
-
-    // 3) Build stronger internal prompt
-    const smartPrompt = buildSmartEditPrompt({
+    const strictPrompt = buildStrictEditPrompt({
       userPrompt,
-      analysis,
-      finalAspect,
+      finalAspect: finalAspect || "auto",
     });
 
     const file = await toFile(parsed.buffer, "product.png", {
@@ -506,7 +388,7 @@ app.post("/api/image", async (req, res) => {
     const result = await client.images.edit({
       model: "gpt-image-1",
       image: file,
-      prompt: smartPrompt,
+      prompt: strictPrompt,
       size,
       output_format: "png",
     });
@@ -524,8 +406,7 @@ app.post("/api/image", async (req, res) => {
 
     return res.json({
       b64,
-      detected: analysis,
-      aspect: finalAspect,
+      aspect: finalAspect || "auto",
       size,
       remainingToday: Math.max(0, DAILY_IMAGE_LIMIT - usage.count),
     });
@@ -564,9 +445,6 @@ app.post("/api/reset", (req, res) => {
   }
 });
 
-/* =========================
-   Start server
-========================= */
 app.listen(PORT, () => {
   console.log(`AI SERVER RUNNING http://localhost:${PORT}`);
 });
