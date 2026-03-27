@@ -75,11 +75,19 @@ header{
   transition:.2s;
 }
 
-.uploadTop{ background:var(--green); }
-.uploadTop:hover{ background:var(--greenDark); }
+.uploadTop{
+  background:var(--green);
+}
+.uploadTop:hover{
+  background:var(--greenDark);
+}
 
-.resetTop{ background:var(--danger); }
-.resetTop:hover{ background:var(--dangerDark); }
+.resetTop{
+  background:var(--danger);
+}
+.resetTop:hover{
+  background:var(--dangerDark);
+}
 
 .select{
   height:44px;
@@ -258,7 +266,9 @@ textarea:focus{
   cursor:pointer;
   min-width:96px;
 }
-.sendBtn:hover{ opacity:.9; }
+.sendBtn:hover{
+  opacity:.9;
+}
 .sendBtn:disabled{
   opacity:.65;
   cursor:not-allowed;
@@ -288,12 +298,12 @@ textarea:focus{
   <div class="topControls">
     <button id="uploadBtn" class="uploadTop">Upload product image</button>
 
-   <select id="aspect" class="select" title="Aspect ratio">
-  <option value="auto" selected>auto</option>
-  <option value="16:9">16:9</option>
-  <option value="9:16">9:16</option>
-  <option value="1:1">1:1</option>
-</select>
+    <select id="aspect" class="select" title="Aspect ratio">
+      <option value="auto" selected>auto</option>
+      <option value="16:9">16:9</option>
+      <option value="9:16">9:16</option>
+      <option value="1:1">1:1</option>
+    </select>
 
     <button id="resetBtn" class="resetTop" type="button">Reset session</button>
   </div>
@@ -306,7 +316,12 @@ textarea:focus{
     </div>
   </div>
 
-  <input type="file" id="fileInput" accept="image/*" style="display:none"/>
+  <input
+    type="file"
+    id="fileInput"
+    accept="image/*"
+    style="display:none"
+  />
 
   <div id="chat" class="chat"></div>
 
@@ -334,14 +349,13 @@ const productThumb = document.getElementById("productThumb");
 const productStatusSub = document.getElementById("productStatusSub");
 
 let hasProduct = false;
-let uploadedProductDataUrl = "";
 
 function slugify(text){
   return (text || "")
     .toLowerCase()
-    .replace(/[^a-z0-9\\s-]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
     .trim()
-    .replace(/\\s+/g, "-")
+    .replace(/\s+/g, "-")
     .slice(0, 50) || "image";
 }
 
@@ -370,16 +384,14 @@ function setProductState(enabled, previewDataUrl = ""){
     uploadBtn.textContent = "Replace product image";
     productStatus.classList.add("show");
     if (previewDataUrl) {
-      uploadedProductDataUrl = previewDataUrl;
       productThumb.src = previewDataUrl;
     }
-    productStatusSub.textContent = "Product uploaded. Product stays untouched.";
+    productStatusSub.textContent = "Product uploaded. AI will edit the image directly.";
   } else {
     uploadBtn.textContent = "Upload product image";
     productStatus.classList.remove("show");
     productThumb.removeAttribute("src");
     productStatusSub.textContent = "";
-    uploadedProductDataUrl = "";
   }
 }
 
@@ -415,166 +427,12 @@ async function watermarkDataUrl(dataUrl){
   });
 }
 
-function loadImage(src){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
-
-function getProductPlacement(canvas, productImg, aspect){
-  const ratio = productImg.naturalWidth / productImg.naturalHeight;
-
-  let maxW = canvas.width * 0.34;
-  let maxH = canvas.height * 0.56;
-
-  if (aspect === "9:16") {
-    maxW = canvas.width * 0.52;
-    maxH = canvas.height * 0.50;
-  }
-
-  if (aspect === "1:1") {
-    maxW = canvas.width * 0.40;
-    maxH = canvas.height * 0.56;
-  }
-
-  let drawWidth = maxW;
-  let drawHeight = drawWidth / ratio;
-
-  if (drawHeight > maxH) {
-    drawHeight = maxH;
-    drawWidth = drawHeight * ratio;
-  }
-
-  const drawX = (canvas.width - drawWidth) / 2;
-  const drawY = (canvas.height - drawHeight) / 2 - canvas.height * 0.02;
-
-  return { drawX, drawY, drawWidth, drawHeight };
-}
-
-function drawPremiumShadow(ctx, canvas, drawX, drawY, drawWidth, drawHeight){
-  ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.20)";
-  ctx.filter = `blur(${Math.max(18, Math.round(canvas.width * 0.012))}px)`;
-  ctx.beginPath();
-  ctx.ellipse(
-    drawX + drawWidth / 2,
-    drawY + drawHeight + canvas.height * 0.035,
-    drawWidth * 0.30,
-    Math.max(14, canvas.height * 0.018),
-    0,
-    0,
-    Math.PI * 2
-  );
-  ctx.fill();
-  ctx.restore();
-}
-
-function drawFakeLighting(ctx, canvas, drawX, drawY, drawWidth, drawHeight, lightDirection){
-  ctx.save();
-
-  const cx = drawX + drawWidth / 2;
-  const cy = drawY + drawHeight / 2;
-
-  if (lightDirection === "left") {
-    const grad = ctx.createRadialGradient(
-      drawX + drawWidth * 0.10, cy, 10,
-      drawX + drawWidth * 0.10, cy, drawWidth * 0.95
-    );
-    grad.addColorStop(0, "rgba(255,255,255,0.20)");
-    grad.addColorStop(0.4, "rgba(255,255,255,0.08)");
-    grad.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(drawX - drawWidth * 0.20, drawY - drawHeight * 0.12, drawWidth * 1.1, drawHeight * 1.24);
-  } else if (lightDirection === "back") {
-    const grad = ctx.createRadialGradient(
-      cx, drawY + drawHeight * 0.15, 20,
-      cx, drawY + drawHeight * 0.15, drawWidth * 0.95
-    );
-    grad.addColorStop(0, "rgba(255,255,255,0.18)");
-    grad.addColorStop(0.45, "rgba(255,255,255,0.06)");
-    grad.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(drawX - drawWidth * 0.12, drawY - drawHeight * 0.15, drawWidth * 1.24, drawHeight * 1.28);
-  } else {
-    const grad = ctx.createRadialGradient(
-      drawX + drawWidth * 0.90, cy, 10,
-      drawX + drawWidth * 0.90, cy, drawWidth * 0.95
-    );
-    grad.addColorStop(0, "rgba(255,255,255,0.20)");
-    grad.addColorStop(0.4, "rgba(255,255,255,0.08)");
-    grad.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(drawX + drawWidth * 0.05, drawY - drawHeight * 0.12, drawWidth * 1.1, drawHeight * 1.24);
-  }
-
-  // subtle top premium glow
-  const topGlow = ctx.createLinearGradient(0, drawY - drawHeight * 0.10, 0, drawY + drawHeight * 0.35);
-  topGlow.addColorStop(0, "rgba(255,255,255,0.10)");
-  topGlow.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = topGlow;
-  ctx.fillRect(drawX - drawWidth * 0.05, drawY - drawHeight * 0.10, drawWidth * 1.10, drawHeight * 0.45);
-
-  ctx.restore();
-}
-
-async function compositePremiumOutput(backgroundB64, prompt, meta = {}){
-  if (!uploadedProductDataUrl) {
-    addMsg("No product image available.", "err");
-    return;
-  }
-
-  const backgroundImg = await loadImage("data:image/png;base64," + backgroundB64);
-  const productImg = await loadImage(uploadedProductDataUrl);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = backgroundImg.naturalWidth;
-  canvas.height = backgroundImg.naturalHeight;
-
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
-
-  const { drawX, drawY, drawWidth, drawHeight } = getProductPlacement(canvas, productImg, meta.aspect);
-
-  // subtle ground darkening
-  ctx.save();
-  const groundGrad = ctx.createRadialGradient(
-    drawX + drawWidth / 2,
-    drawY + drawHeight + canvas.height * 0.02,
-    10,
-    drawX + drawWidth / 2,
-    drawY + drawHeight + canvas.height * 0.02,
-    drawWidth * 0.70
-  );
-  groundGrad.addColorStop(0, "rgba(0,0,0,0.10)");
-  groundGrad.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = groundGrad;
-  ctx.fillRect(drawX - drawWidth * 0.55, drawY + drawHeight - 10, drawWidth * 2.1, canvas.height * 0.28);
-  ctx.restore();
-
-  drawPremiumShadow(ctx, canvas, drawX, drawY, drawWidth, drawHeight);
-
-  // product untouched
-  ctx.drawImage(productImg, drawX, drawY, drawWidth, drawHeight);
-
-  // fake lighting over product area only
-  drawFakeLighting(
-    ctx,
-    canvas,
-    drawX,
-    drawY,
-    drawWidth,
-    drawHeight,
-    meta.lightDirection || "right"
-  );
-
-  const compositedDataUrl = canvas.toDataURL("image/png");
-  const finalDataUrl = await watermarkDataUrl(compositedDataUrl);
-
+async function addImage(b64, prompt, meta = {}){
   const wrapper = document.createElement("div");
   wrapper.className = "imgWrap";
+
+  const rawDataUrl = "data:image/png;base64," + b64;
+  const finalDataUrl = await watermarkDataUrl(rawDataUrl);
 
   const img = document.createElement("img");
   img.className = "img";
@@ -633,12 +491,12 @@ async function uploadProduct(file){
 
       if (r.ok) {
         setProductState(true, dataUrl);
-        addMsg("Product image uploaded. Now describe the picture you want.", "ai");
+        addMsg("Product image uploaded. Now describe your scene.", "ai");
         setTimeout(() => input.focus(), 50);
       } else {
         addMsg(data.message || "Upload failed.", "err");
       }
-    } catch {
+    } catch (e) {
       addMsg("Upload failed. Try again.", "err");
     }
   };
@@ -665,9 +523,9 @@ async function resetSession(){
     setProductState(false);
     aspectSel.value = "auto";
     addMsg("Session reset. You can start fresh.", "ai");
-    addMsg("Ask for content strategy — or upload your product and create premium visuals.", "ai");
+    addMsg("Ask for content strategy — or upload your product and create powerful marketing visuals.", "ai");
     setTimeout(() => input.focus(), 50);
-  } catch {
+  } catch (e) {
     addMsg("Reset failed. Try again.", "err");
   }
 }
@@ -718,19 +576,18 @@ async function ask(){
       ].filter(Boolean).join(" • ");
 
       if (data.b64) {
-        await compositePremiumOutput(data.b64, text, {
+        await addImage(data.b64, text, {
           aspect: data.aspect,
           size: data.size,
-          lightDirection: data.lightDirection,
           remainingToday: data.remainingToday
         });
       } else {
-        addMsg("No background returned.", "err");
+        addMsg("No image returned.", "err");
       }
     } else {
       waiting.textContent = data.reply || "No reply.";
     }
-  } catch {
+  } catch (e) {
     waiting.className = "msg err";
     waiting.textContent = "Network error. Try again.";
   } finally {
@@ -757,7 +614,7 @@ input.onkeydown = (e) => {
   }
 };
 
-addMsg("Ask for content strategy — or upload your product and create premium visuals.", "ai");
+addMsg("Ask for content strategy — or upload your product and create powerful marketing visuals.", "ai");
 </script>
 
 </body>
