@@ -316,13 +316,13 @@ textarea:focus{
     <button id="uploadBtn" class="uploadTop">Upload product image</button>
 
     <select id="aspect" class="select" title="Format">
-  <option value="" selected>Format</option>
-  <option value="4:5">Post (Instagram)</option>
-  <option value="9:16">Story / Reel</option>
-  <option value="1:1">Square</option>
-  <option value="16:9">Landscape</option>
-  <option value="3:4">Poster</option>
-</select>
+      <option value="" selected>Format</option>
+      <option value="4:5">Post (Instagram)</option>
+      <option value="9:16">Story / Reel</option>
+      <option value="1:1">Square</option>
+      <option value="16:9">Landscape</option>
+      <option value="3:4">Poster</option>
+    </select>
 
     <button id="resetBtn" class="resetTop" type="button">Reset session</button>
   </div>
@@ -368,7 +368,6 @@ const productThumb = document.getElementById("productThumb");
 const productStatusSub = document.getElementById("productStatusSub");
 
 let hasProduct = false;
-let lastUploadedPreview = "";
 
 function slugify(text){
   return (text || "")
@@ -404,7 +403,6 @@ function setProductState(enabled, previewDataUrl = ""){
     uploadBtn.textContent = "Replace product image";
     productStatus.classList.add("show");
     if (previewDataUrl) {
-      lastUploadedPreview = previewDataUrl;
       productThumb.src = previewDataUrl;
     }
     productStatusSub.textContent = "Product uploaded. Describe your visual.";
@@ -413,11 +411,9 @@ function setProductState(enabled, previewDataUrl = ""){
     productStatus.classList.remove("show");
     productThumb.removeAttribute("src");
     productStatusSub.textContent = "";
-    lastUploadedPreview = "";
   }
 }
 
-// watermark on image client-side
 async function watermarkDataUrl(dataUrl){
   return new Promise((resolve) => {
     const img = new Image();
@@ -464,10 +460,10 @@ async function addImage(b64, prompt, meta = {}){
 
   const metaLine = document.createElement("div");
   metaLine.className = "imgMeta";
-
-  const aspectText = meta.aspect ? `Aspect: ${meta.aspect}` : "";
-  const remainText = Number.isFinite(meta.remainingToday) ? `Remaining today: ${meta.remainingToday}` : "";
-  metaLine.textContent = [aspectText, remainText].filter(Boolean).join(" • ");
+  metaLine.textContent = [
+    meta.aspect ? `Format: ${meta.aspect}` : "",
+    Number.isFinite(meta.remainingToday) ? `Remaining today: ${meta.remainingToday}` : ""
+  ].filter(Boolean).join(" • ");
 
   const downloadBtn = document.createElement("button");
   downloadBtn.className = "dlBtn";
@@ -543,6 +539,7 @@ async function resetSession(){
 
     chat.innerHTML = "";
     setProductState(false);
+    aspectSel.value = "";
     addMsg("Session reset. You can start fresh.", "ai");
     addMsg("Ask for content strategy — or upload your product and create powerful marketing visuals.", "ai");
     setTimeout(() => input.focus(), 50);
@@ -589,9 +586,11 @@ async function ask(){
     }
 
     if (hasProduct) {
-      const aspectText = data.aspect ? `Aspect: ${data.aspect}` : "Aspect: auto";
-      const remainText = Number.isFinite(data.remainingToday) ? `Remaining today: ${data.remainingToday}` : "";
-      waiting.textContent = [ "Done.", aspectText, remainText ].filter(Boolean).join(" • ");
+      waiting.textContent = [
+        "Done.",
+        data.aspect ? `Format: ${data.aspect}` : "",
+        Number.isFinite(data.remainingToday) ? `Remaining today: ${data.remainingToday}` : ""
+      ].filter(Boolean).join(" • ");
 
       if (data.b64) {
         await addImage(data.b64, text, {
