@@ -8,936 +8,270 @@
 <style>
 :root{
   --bg:#E9D8C2;
-  --green:#9ACD32;
-  --greenDark:#7FB800;
   --purple:#8E7CC3;
-  --white:#ffffff;
-  --text:#3b3b3b;
-  --radius:18px;
-  --danger:#d9534f;
-  --dangerDark:#bf433f;
-  --money1:#00ff88;
-  --money2:#00cc66;
-  --moneyBg:#07140d;
-  --moneyBg2:#000000;
 }
 
-*{box-sizing:border-box;}
-
-html,body{
-  height:100%;
+body{
   margin:0;
-  font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family:system-ui;
   background:var(--bg);
-  color:var(--text);
-  overflow:hidden;
-  transition:background .45s ease, color .35s ease;
+  transition:0.4s;
 }
 
 body.money-mode{
-  background:
-    radial-gradient(circle at 20% 20%, rgba(0,255,136,.14), transparent 25%),
-    radial-gradient(circle at 80% 30%, rgba(0,204,102,.10), transparent 25%),
-    radial-gradient(circle at center, #0c1f14 0%, #040905 55%, #000 100%);
-  color:#eefcf4;
-}
-
-*{box-sizing:border-box;}
-
-#moneyParticles{
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  pointer-events:none;
-  z-index:0;
-  opacity:0;
-  transition:opacity .35s ease;
-}
-
-body.money-mode #moneyParticles{
-  opacity:1;
+  background: radial-gradient(circle at center,#001a0f,#000);
+  color:#eafff3;
 }
 
 .wrap{
-  position:relative;
-  z-index:1;
-  height:100dvh;
-  width:min(1000px,100%);
-  margin:0 auto;
+  max-width:1000px;
+  margin:auto;
   padding:20px;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
-
-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.brand h1{
-  margin:0;
-  font-size:22px;
-  color:var(--purple);
-  transition:color .35s ease, text-shadow .35s ease;
-}
-
-body.money-mode .brand h1{
-  color:#dffff0;
-  text-shadow:0 0 18px rgba(0,255,136,.18);
-}
-
-.brand p{
-  margin:0;
-  font-size:13px;
-  opacity:.75;
-  transition:color .35s ease, opacity .35s ease;
-}
-
-body.money-mode .brand p{
-  color:rgba(232,255,241,.78);
-  opacity:1;
-}
-
-.topControls{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
-}
-
-.uploadTop{
-  color:white;
-  border:none;
-  padding:12px 18px;
-  border-radius:12px;
-  font-weight:600;
-  cursor:pointer;
-  transition:.22s ease;
-  background:var(--green);
-}
-
-.uploadTop:hover{
-  background:var(--greenDark);
-  transform:translateY(-1px);
-}
-
-.moneyBtn{
-  background:linear-gradient(135deg,var(--money1),var(--money2));
-  color:#00140a;
-  border:none;
-  padding:12px 18px;
-  border-radius:12px;
-  font-weight:800;
-  cursor:pointer;
-  transition:.22s ease;
   position:relative;
-  overflow:hidden;
-}
-
-.moneyBtn:hover{
-  transform:translateY(-1px) scale(1.03);
-  box-shadow:0 0 20px rgba(0,255,136,.35);
-}
-
-.moneyBtn::before{
-  content:"";
-  position:absolute;
-  top:0;
-  left:-120%;
-  width:80%;
-  height:100%;
-  background:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
-  transform:skewX(-20deg);
-}
-
-.moneyBtn:hover::before{
-  animation:shine 1s ease;
-}
-
-@keyframes shine{
-  to{ left:140%; }
-}
-
-.money-glow{
-  box-shadow:
-    0 0 0 1px rgba(0,255,136,.25),
-    0 0 22px rgba(0,255,136,.22),
-    0 0 44px rgba(0,255,136,.12);
-}
-
-.select{
-  height:44px;
-  padding:0 14px;
-  border-radius:12px;
-  border:none;
-  background:var(--purple);
-  color:#fff;
-  font-weight:600;
-  cursor:pointer;
-  appearance:none;
-  -webkit-appearance:none;
-  -moz-appearance:none;
-  padding-right:36px;
-  position:relative;
-  background-image:
-    linear-gradient(45deg, transparent 50%, rgba(255,255,255,.95) 50%),
-    linear-gradient(135deg, rgba(255,255,255,.95) 50%, transparent 50%),
-    linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0));
-  background-position:
-    calc(100% - 18px) 18px,
-    calc(100% - 12px) 18px,
-    0 0;
-  background-size:
-    6px 6px,
-    6px 6px,
-    100% 100%;
-  background-repeat:no-repeat;
-  transition:box-shadow .25s ease, background .25s ease, color .25s ease;
-}
-.select:focus{
-  outline:none;
-  box-shadow:0 0 0 4px rgba(142,124,195,.22);
-}
-
-body.money-mode .select{
-  background:#13291d;
-  color:#f1fff7;
-  box-shadow:inset 0 0 0 1px rgba(0,255,136,.15);
-}
-
-.productStatus{
-  display:none;
-  align-items:center;
-  gap:10px;
-  background:rgba(255,255,255,.65);
-  border-radius:14px;
-  padding:10px 12px;
-  min-height:56px;
-  transition:background .35s ease, box-shadow .35s ease;
-}
-
-.productStatus.show{
-  display:flex;
-}
-
-body.money-mode .productStatus{
-  background:rgba(14,25,18,.9);
-  box-shadow:0 8px 28px rgba(0,0,0,.24);
-}
-
-.productThumb{
-  width:42px;
-  height:42px;
-  object-fit:cover;
-  border-radius:10px;
-  background:#fff;
-  border:1px solid rgba(0,0,0,.08);
-}
-
-.productStatusText{
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-  font-size:13px;
-}
-
-.productStatusText strong{
-  color:var(--purple);
-  font-size:13px;
-}
-
-body.money-mode .productStatusText strong{
-  color:#dffff0;
-}
-
-.productStatusText span{
-  opacity:.75;
-}
-
-body.money-mode .productStatusText span{
-  color:#caefd7;
-  opacity:1;
+  z-index:2;
 }
 
 .chat{
-  flex:1;
-  min-height:0;
-  overflow:auto;
-  -webkit-overflow-scrolling:touch;
   background:white;
-  padding:18px;
-  border-radius:var(--radius);
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  box-shadow:0 10px 30px rgba(0,0,0,.08);
-  padding-bottom:90px;
-  transition:background .35s ease, color .35s ease, box-shadow .35s ease, border-color .35s ease;
-  border:1px solid transparent;
-}
-
-body.money-mode .chat{
-  background:rgba(10,14,11,.86);
-  color:#effff5;
-  border-color:rgba(0,255,136,.08);
-  box-shadow:
-    0 14px 40px rgba(0,0,0,.3),
-    0 0 0 1px rgba(0,255,136,.05),
-    inset 0 1px 0 rgba(255,255,255,.02);
-  backdrop-filter:blur(8px);
+  height:60vh;
+  overflow:auto;
+  padding:20px;
+  border-radius:16px;
 }
 
 .msg{
-  max-width:80%;
-  padding:12px 16px;
-  border-radius:14px;
-  font-size:14px;
-  line-height:1.5;
-  white-space:pre-wrap;
-  word-break:break-word;
-  animation:msgIn .22s ease;
-}
-
-@keyframes msgIn{
-  from{
-    transform:translateY(6px);
-    opacity:0;
-  }
-  to{
-    transform:translateY(0);
-    opacity:1;
-  }
-}
-
-.me{
-  align-self:flex-end;
-  background:var(--purple);
-  color:white;
-}
-
-body.money-mode .me{
-  background:linear-gradient(135deg, #0ccf72, #07a958);
-  color:#03150b;
-  box-shadow:0 6px 20px rgba(0,255,136,.12);
-}
-
-.ai{
-  align-self:flex-start;
-  background:#f4f4f4;
-}
-
-body.money-mode .ai{
-  background:rgba(255,255,255,.06);
-  color:#effff5;
-  border:1px solid rgba(255,255,255,.04);
-}
-
-.err{
-  align-self:flex-start;
-  background:#ffd7dc;
-  color:#b30021;
-}
-
-.imgWrap{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  align-items:flex-start;
-}
-
-.img{
-  width:min(500px,100%);
-  border-radius:14px;
-  margin-top:8px;
-  display:block;
-}
-
-.imgMeta{
-  font-size:12px;
-  opacity:.72;
-}
-
-body.money-mode .imgMeta{
-  color:#d7f8e3;
-  opacity:.8;
-}
-
-.dlBtn{
-  background:var(--green);
-  color:white;
-  border:none;
-  padding:8px 14px;
+  margin:10px 0;
+  padding:10px;
   border-radius:10px;
-  cursor:pointer;
-  font-size:13px;
-  transition:.2s ease;
-}
-.dlBtn:hover{
-  background:var(--greenDark);
 }
 
-body.money-mode .dlBtn{
-  background:linear-gradient(135deg,var(--money1),var(--money2));
-  color:#00140a;
-  font-weight:700;
-}
+.me{background:#8E7CC3;color:white;}
+.ai{background:#eee;}
 
 .bar{
   display:flex;
   gap:10px;
-  position:sticky;
-  bottom:0;
-  background:var(--bg);
-  padding:12px 0 calc(12px + env(safe-area-inset-bottom));
-  z-index:10;
-  transition:background .35s ease;
-}
-
-body.money-mode .bar{
-  background:transparent;
+  margin-top:10px;
 }
 
 textarea{
   flex:1;
-  resize:none;
-  height:56px;
-  border-radius:14px;
-  border:2px solid var(--green);
-  padding:12px;
-  font-size:14px;
-  background:#fff;
-  color:var(--text);
-  touch-action:manipulation;
-  transition:border-color .25s ease, background .35s ease, color .35s ease, box-shadow .35s ease;
-}
-textarea:focus{
-  outline:none;
-  border-color:var(--purple);
+  padding:10px;
+  border-radius:10px;
 }
 
-body.money-mode textarea{
-  background:rgba(12,18,14,.94);
-  color:#f4fff8;
-  border-color:rgba(0,255,136,.5);
-  box-shadow:
-    0 0 0 1px rgba(0,255,136,.12),
-    0 0 20px rgba(0,255,136,.08);
-}
-
-body.money-mode textarea:focus{
-  border-color:#00ff88;
-  box-shadow:
-    0 0 0 1px rgba(0,255,136,.16),
-    0 0 24px rgba(0,255,136,.16);
-}
-
-.sendBtn{
-  background:var(--purple);
-  color:white;
+button{
+  padding:10px 15px;
   border:none;
-  padding:0 20px;
-  border-radius:14px;
-  font-weight:600;
+  border-radius:10px;
   cursor:pointer;
-  min-width:96px;
-  transition:.22s ease;
-}
-.sendBtn:hover{
-  opacity:.9;
-}
-.sendBtn:disabled{
-  opacity:.65;
-  cursor:not-allowed;
 }
 
-body.money-mode .sendBtn{
-  background:linear-gradient(135deg,var(--money1),var(--money2));
-  color:#00140a;
-  box-shadow:0 10px 24px rgba(0,255,136,.14);
+/* MONEY BUTTON */
+.moneyBtn{
+  background:linear-gradient(135deg,#00ff88,#00cc66);
+  font-weight:bold;
 }
 
-footer{
-  text-align:center;
-  padding:4px 0 0;
-  font-size:12px;
-  color:#6b6b6b;
-  opacity:.8;
-  transition:color .35s ease, opacity .35s ease;
+.moneyBtn.active{
+  background:#111;
+  color:#fff;
+  box-shadow:0 0 20px rgba(0,255,136,.4);
 }
 
-body.money-mode footer{
-  color:#d5eedf;
-  opacity:.9;
-}
-
-.flashOverlay{
+/* PARTICLES */
+#particles{
   position:fixed;
-  inset:0;
-  background:radial-gradient(circle, rgba(0,255,136,.18), rgba(0,255,136,.08), transparent 68%);
-  z-index:9999;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
   pointer-events:none;
-  animation:flashFade .28s ease forwards;
-}
-
-@keyframes flashFade{
-  from{ opacity:1; }
-  to{ opacity:0; }
-}
-
-@media(max-width:700px){
-  .msg{max-width:92%;}
-  .wrap{padding:16px;}
-  header{
-    align-items:flex-start;
-    flex-direction:column;
-  }
+  z-index:1;
 }
 </style>
 </head>
 
 <body>
-<canvas id="moneyParticles"></canvas>
+
+<canvas id="particles"></canvas>
 
 <div class="wrap">
 
-  <header>
-    <div class="brand">
-      <div>
-        <h1>Edamame Brain</h1>
-        <p>Smart. Bold. Deep strategy.</p>
-      </div>
-    </div>
-  </header>
+<h2>Edamame Brain</h2>
 
-  <div class="topControls">
-    <button id="uploadBtn" class="uploadTop">Upload product image</button>
-    <button id="moneyBtn" class="moneyBtn" type="button">💸 Make me money</button>
-    <audio id="cashSound" src="/sounds/cash.mp3" preload="auto"></audio>
+<button id="moneyBtn" class="moneyBtn">💸 Make me money</button>
 
-    <select id="aspect" class="select" title="Aspect ratio">
-      <option value="16:9">16:9</option>
-      <option value="9:16">9:16</option>
-      <option value="4:5" selected>4:5</option>
-      <option value="1:1">1:1</option>
-    </select>
-  </div>
+<audio id="cashSound" src="/cash.mp3"></audio>
 
-  <div id="productStatus" class="productStatus">
-    <img id="productThumb" class="productThumb" alt="Product preview"/>
-    <div class="productStatusText">
-      <strong>Product ready</strong>
-      <span id="productStatusSub">You can now create visuals.</span>
-    </div>
-  </div>
+<div id="chat" class="chat"></div>
 
-  <input
-    type="file"
-    id="fileInput"
-    accept="image/*"
-    style="display:none"
-  />
-
-  <div id="chat" class="chat"></div>
-
-  <div class="bar">
-    <textarea id="input" placeholder="Describe what you want..."></textarea>
-    <button id="send" class="sendBtn">Send</button>
-  </div>
-
-  <footer>
-    Powered by <strong>Nano Banana AI</strong> · © Edamame 2026
-  </footer>
+<div class="bar">
+<textarea id="input" placeholder="Describe what you want..."></textarea>
+<button id="send">Send</button>
+</div>
 
 </div>
 
 <script>
-const savedSession = localStorage.getItem("edamame_sessionId");
-const sessionId = savedSession || crypto.randomUUID();
-localStorage.setItem("edamame_sessionId", sessionId);
-
 const chat = document.getElementById("chat");
 const input = document.getElementById("input");
 const send = document.getElementById("send");
-const uploadBtn = document.getElementById("uploadBtn");
 const moneyBtn = document.getElementById("moneyBtn");
-const cashSound = document.getElementById("cashSound");
-const fileInput = document.getElementById("fileInput");
-const aspectSel = document.getElementById("aspect");
+const sound = document.getElementById("cashSound");
 
-const productStatus = document.getElementById("productStatus");
-const productThumb = document.getElementById("productThumb");
-const productStatusSub = document.getElementById("productStatusSub");
+let sessionId = crypto.randomUUID();
+let currentMode = "default";
 
-const particlesCanvas = document.getElementById("moneyParticles");
-const pctx = particlesCanvas.getContext("2d");
-
-let hasProduct = false;
-let particlesActive = false;
-let particles = [];
-let animationFrameId = null;
-
-function slugify(text){
-  return (text || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\\s-]/g, "")
-    .trim()
-    .replace(/\\s+/g, "-")
-    .slice(0, 50) || "image";
-}
-
-function scrollChatToBottom(){
-  chat.scrollTop = chat.scrollHeight;
-}
+/* ================= CHAT ================= */
 
 function addMsg(text, cls){
   const d = document.createElement("div");
   d.className = "msg " + cls;
   d.textContent = text;
   chat.appendChild(d);
-  scrollChatToBottom();
-  return d;
-}
-
-function setLoadingState(loading){
-  send.disabled = loading;
-  send.textContent = loading ? "..." : "Send";
-}
-
-function setProductState(enabled, previewDataUrl = ""){
-  hasProduct = enabled;
-
-  if (enabled) {
-    uploadBtn.textContent = "Replace product image";
-    productStatus.classList.add("show");
-    if (previewDataUrl) {
-      productThumb.src = previewDataUrl;
-    }
-    productStatusSub.textContent = "Product uploaded. AI will edit the image directly.";
-  } else {
-    uploadBtn.textContent = "Upload product image";
-    productStatus.classList.remove("show");
-    productThumb.removeAttribute("src");
-    productStatusSub.textContent = "";
-  }
-}
-
-async function watermarkDataUrl(dataUrl){
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement("canvas");
-      c.width = img.naturalWidth;
-      c.height = img.naturalHeight;
-      const ctx = c.getContext("2d");
-
-      ctx.drawImage(img, 0, 0);
-
-      const pad = Math.round(Math.min(c.width, c.height) * 0.018);
-      const fontSize = Math.max(14, Math.round(Math.min(c.width, c.height) * 0.022));
-
-      ctx.font = `600 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto`;
-      ctx.textBaseline = "bottom";
-      ctx.textAlign = "right";
-
-      const text = "edamame brain";
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.fillText(text, c.width - pad + 2, c.height - pad + 2);
-      ctx.fillStyle = "rgba(255,255,255,0.70)";
-      ctx.fillText(text, c.width - pad, c.height - pad);
-
-      resolve(c.toDataURL("image/png"));
-    };
-
-    img.onerror = () => resolve(dataUrl);
-    img.src = dataUrl;
-  });
-}
-
-async function addImage(b64, prompt, meta = {}){
-  const wrapper = document.createElement("div");
-  wrapper.className = "imgWrap";
-
-  const rawDataUrl = "data:image/png;base64," + b64;
-  const finalDataUrl = await watermarkDataUrl(rawDataUrl);
-
-  const img = document.createElement("img");
-  img.className = "img";
-  img.src = finalDataUrl;
-  img.alt = prompt || "Generated image";
-
-  const metaLine = document.createElement("div");
-  metaLine.className = "imgMeta";
-  metaLine.textContent = [
-    meta.aspect ? `Aspect: ${meta.aspect}` : "",
-    meta.model ? `Model: ${meta.model}` : "",
-    Number.isFinite(meta.remainingToday) ? `Remaining today: ${meta.remainingToday}` : ""
-  ].filter(Boolean).join(" • ");
-
-  const downloadBtn = document.createElement("button");
-  downloadBtn.className = "dlBtn";
-  downloadBtn.textContent = "Download image";
-
-  downloadBtn.onclick = () => {
-    const a = document.createElement("a");
-    a.href = finalDataUrl;
-    a.download = `edamame-brain-${slugify(prompt)}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  wrapper.appendChild(img);
-
-  if (metaLine.textContent) {
-    wrapper.appendChild(metaLine);
-  }
-
-  wrapper.appendChild(downloadBtn);
-  chat.appendChild(wrapper);
-  scrollChatToBottom();
-}
-
-async function uploadProduct(file){
-  const reader = new FileReader();
-
-  reader.onload = async () => {
-    try {
-      const dataUrl = reader.result;
-
-      const r = await fetch("/api/product", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId,
-          imageDataUrl: dataUrl
-        })
-      });
-
-      const data = await r.json().catch(() => ({}));
-
-      if (r.ok) {
-        setProductState(true, dataUrl);
-        addMsg("Product image uploaded. Now describe your scene.", "ai");
-        setTimeout(() => input.focus(), 50);
-      } else {
-        addMsg(data.message || data.error || "Upload failed.", "err");
-      }
-    } catch (e) {
-      addMsg("Upload failed. Try again.", "err");
-    }
-  };
-
-  reader.readAsDataURL(file);
+  chat.scrollTop = chat.scrollHeight;
 }
 
 async function ask(){
   const text = input.value.trim();
-  if (!text) return;
+  if(!text) return;
 
   input.value = "";
-  addMsg(text, "me");
-  setLoadingState(true);
+  addMsg(text,"me");
 
-  const waiting = addMsg("…", "ai");
+  const res = await fetch("/api/chat",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      sessionId,
+      message:text,
+      mode: currentMode
+    })
+  });
 
-  const endpoint = hasProduct ? "/api/image" : "/api/chat";
-  const payload = hasProduct
-    ? {
-        sessionId,
-        prompt: text,
-        aspect: aspectSel.value
-      }
-    : {
-        sessionId,
-        message: text
-      };
-
-  try {
-    const r = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await r.json().catch(() => ({}));
-
-    if (!r.ok) {
-      waiting.className = "msg err";
-      waiting.textContent = data.message || data.error || ("Error (" + r.status + ")");
-      return;
-    }
-
-    if (hasProduct) {
-      waiting.textContent = [
-        "Done.",
-        data.aspect ? `Aspect: ${data.aspect}` : "",
-        data.model ? `Model: ${data.model}` : "",
-        Number.isFinite(data.remainingToday) ? `Remaining today: ${data.remainingToday}` : ""
-      ].filter(Boolean).join(" • ");
-
-      if (data.b64) {
-        await addImage(data.b64, text, {
-          aspect: data.aspect,
-          model: data.model,
-          remainingToday: data.remainingToday
-        });
-      } else {
-        addMsg("No image returned.", "err");
-      }
-    } else {
-      waiting.textContent = data.reply || "No reply.";
-    }
-  } catch (e) {
-    waiting.className = "msg err";
-    waiting.textContent = "Network error. Try again.";
-  } finally {
-    setLoadingState(false);
-    setTimeout(() => input.focus(), 50);
-  }
+  const data = await res.json();
+  addMsg(data.reply || "No reply","ai");
 }
 
-function flashMoney(){
-  const flash = document.createElement("div");
-  flash.className = "flashOverlay";
-  document.body.appendChild(flash);
-  setTimeout(() => flash.remove(), 280);
-}
-
-function resizeParticlesCanvas(){
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  particlesCanvas.width = Math.floor(window.innerWidth * dpr);
-  particlesCanvas.height = Math.floor(window.innerHeight * dpr);
-  particlesCanvas.style.width = window.innerWidth + "px";
-  particlesCanvas.style.height = window.innerHeight + "px";
-  pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-
-function createParticle(){
-  const fromLeft = Math.random() > 0.5;
-  return {
-    x: fromLeft ? Math.random() * window.innerWidth * 0.35 : window.innerWidth * 0.65 + Math.random() * window.innerWidth * 0.35,
-    y: Math.random() * window.innerHeight,
-    r: Math.random() * 2.2 + 0.6,
-    vx: (Math.random() - 0.5) * 0.22,
-    vy: -(Math.random() * 0.35 + 0.08),
-    alpha: Math.random() * 0.45 + 0.08,
-    hue: Math.random() > 0.5 ? 145 : 105
-  };
-}
-
-function initParticles(){
-  particles = [];
-  const count = Math.min(90, Math.max(36, Math.floor(window.innerWidth / 18)));
-  for (let i = 0; i < count; i++) {
-    particles.push(createParticle());
-  }
-}
-
-function drawParticles(){
-  if (!particlesActive) return;
-
-  pctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
-  for (let i = 0; i < particles.length; i++) {
-    const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.alpha += (Math.random() - 0.5) * 0.015;
-
-    if (p.alpha < 0.05) p.alpha = 0.05;
-    if (p.alpha > 0.5) p.alpha = 0.5;
-
-    if (p.y < -10) {
-      particles[i] = createParticle();
-      particles[i].y = window.innerHeight + 10;
-    }
-
-    const gradient = pctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
-    gradient.addColorStop(0, `hsla(${p.hue}, 100%, 65%, ${p.alpha})`);
-    gradient.addColorStop(1, `hsla(${p.hue}, 100%, 65%, 0)`);
-
-    pctx.beginPath();
-    pctx.fillStyle = gradient;
-    pctx.arc(p.x, p.y, p.r * 5, 0, Math.PI * 2);
-    pctx.fill();
-
-    pctx.beginPath();
-    pctx.fillStyle = `hsla(${p.hue}, 100%, 75%, ${Math.min(p.alpha + 0.08, 0.6)})`;
-    pctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    pctx.fill();
-  }
-
-  animationFrameId = requestAnimationFrame(drawParticles);
-}
-
-function startParticles(){
-  if (particlesActive) return;
-  particlesActive = true;
-  resizeParticlesCanvas();
-  initParticles();
-  drawParticles();
-}
-
-function playCashSound(){
-  if (!cashSound) return;
-  cashSound.currentTime = 0;
-  cashSound.play().catch(() => {});
-}
-
-function activateMoneyMode(){
-  document.body.classList.add("money-mode");
-  moneyBtn.classList.add("money-glow");
-
-  playCashSound();
-
-  if (navigator.vibrate) {
-    navigator.vibrate(50);
-  }
-
-  flashMoney();
-  startParticles();
-
-  input.placeholder = "Type what you sell… let’s make money";
-  addMsg("Tell me what you sell.", "ai");
-  setTimeout(() => input.focus(), 50);
-}
-
-uploadBtn.onclick = () => fileInput.click();
-
-fileInput.onchange = (e) => {
-  const f = e.target.files?.[0];
-  if (f) uploadProduct(f);
-  fileInput.value = "";
-};
-
-moneyBtn.onclick = activateMoneyMode;
 send.onclick = ask;
-
-input.onkeydown = (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
+input.onkeydown = e=>{
+  if(e.key==="Enter" && !e.shiftKey){
     e.preventDefault();
     ask();
   }
 };
 
-window.addEventListener("resize", () => {
-  if (particlesActive) {
-    resizeParticlesCanvas();
-    initParticles();
-  }
-});
+/* ================= PARTICLES ================= */
 
-addMsg("Press 'Make me money' and tell me what you sell.", "ai");
+const canvas = document.getElementById("particles");
+const ctx = canvas.getContext("2d");
+
+let particles = [];
+let running = false;
+let anim;
+
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.onresize = resize;
+
+function createParticles(){
+  particles=[];
+  for(let i=0;i<60;i++){
+    particles.push({
+      x:Math.random()*canvas.width,
+      y:Math.random()*canvas.height,
+      r:Math.random()*2,
+      speed:Math.random()*0.5+0.2
+    });
+  }
+}
+
+function draw(){
+  if(!running) return;
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  particles.forEach(p=>{
+    p.y -= p.speed;
+    if(p.y<0){
+      p.y=canvas.height;
+      p.x=Math.random()*canvas.width;
+    }
+
+    ctx.beginPath();
+    ctx.fillStyle="rgba(0,255,136,0.4)";
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  anim = requestAnimationFrame(draw);
+}
+
+function startParticles(){
+  if(running) return;
+  running=true;
+  createParticles();
+  draw();
+}
+
+function stopParticles(){
+  running=false;
+  cancelAnimationFrame(anim);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+/* ================= MONEY MODE ================= */
+
+moneyBtn.onclick = () => {
+
+  if(currentMode === "default"){
+
+    currentMode = "money";
+
+    sound.currentTime = 0;
+    sound.play().catch(()=>{});
+
+    // vibration
+    if(navigator.vibrate){
+      navigator.vibrate(60);
+    }
+
+    document.body.classList.add("money-mode");
+    moneyBtn.classList.add("active");
+    moneyBtn.textContent = "← Back";
+
+    input.placeholder = "Type what you sell...";
+    input.focus();
+
+    addMsg("Tell me what you sell.","ai");
+
+    startParticles();
+
+  } else {
+
+    currentMode = "default";
+
+    document.body.classList.remove("money-mode");
+    moneyBtn.classList.remove("active");
+    moneyBtn.textContent = "💸 Make me money";
+
+    input.placeholder = "Describe what you want...";
+    input.focus();
+
+    stopParticles();
+
+    addMsg("Back to normal mode.","ai");
+  }
+};
+
+/* ================= INIT ================= */
+
+addMsg("Press 'Make me money' and start.","ai");
+
 </script>
 
 </body>
