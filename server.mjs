@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 import OpenAI from "openai";
-import { toFile } from "openai/uploads";
+import { GoogleGenAI, Modality } from "@google/genai";
 
 const app = express();
 
@@ -12,8 +12,12 @@ app.use(express.static("public"));
 
 app.get("/", (req, res) => res.redirect("/brain.html"));
 
-const client = new OpenAI({
+const openaiClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+});
+
+const googleClient = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
 });
 
 /* =========================
@@ -39,12 +43,7 @@ const ALLOWED_IMAGE_MIMES = new Set([
   "image/webp",
 ]);
 
-const OPENAI_SIZE_MAP = {
-  auto: "auto",
-  "1:1": "1024x1024",
-  "9:16": "1024x1536",
-  "16:9": "1536x1024",
-};
+const ALLOWED_ASPECTS = new Set(["auto", "1:1", "9:16", "16:9"]);
 
 const SYSTEM_PROMPT = `
 You are Edamame Brain — the content operator for serious brands.
@@ -168,50 +167,31 @@ function cleanupExpiredSessions() {
 
 function normalizeAspect(value) {
   const aspect = String(value || "").trim();
-  return OPENAI_SIZE_MAP[aspect] ? aspect : "auto";
+  return ALLOWED_ASPECTS.has(aspect) ? aspect : "auto";
 }
 
-function buildEditPrompt(userPrompt, aspect) {
+function buildGeminiEditPrompt(userPrompt, aspect) {
   return `
-You are editing a real product image.
+Edit this real product image carefully.
 
 CRITICAL RULES:
-- Keep the product EXACTLY the same.
-- Do NOT redesign the product.
-- Do NOT recreate the product.
+- Keep the product exactly the same.
+- Do NOT redesign or recreate the product.
 - Do NOT change the logo.
 - Do NOT change any text.
 - Do NOT change spelling, typography, label layout, or branding.
-- Do NOT alter brand identity in any way.
-- The logo and text must remain readable and as close to the original as possible.
-- Do NOT change product shape, size, proportions, colors, or packaging structure.
-- Do NOT restyle the product.
+- Keep all logo and text as close to the original as possible.
+- Do NOT alter product shape, colors, proportions, or packaging structure.
 
 EDIT SCOPE:
 - Improve the background and environment.
-- Enhance the image in a natural and realistic way.
-- You may improve overall scene lighting, but do NOT repaint the product surface.
-- Keep changes subtle, premium, and commercially clean.
-- Avoid over-stylization.
+- Keep changes subtle, realistic, premium, and commercially clean.
 - Avoid dramatic transformations.
-- Avoid heavy reflections on the label.
-- Avoid replacing packaging details.
+- Avoid over-stylization.
+- Keep the product visually dominant.
 
-STYLE:
-- Clean
-- Premium
-- Commercial
-- Ad-ready
-- Realistic
-
-IMPORTANT:
-- This must look like the SAME original product placed in a better environment.
-- The product must NOT look newly generated.
-- Keep the product centered and visually dominant.
-- Respect aspect ratio (${aspect}).
-
-USER REQUEST:
-${userPrompt}
+Aspect ratio: ${aspect}
+User request: ${userPrompt}
 `.trim();
 }
 
@@ -272,7 +252,7 @@ app.post("/api/product", (req, res) => {
 });
 
 /* =========================
-   Chat
+   Chat / Strategy / Calendars
 ========================= */
 app.post("/api/chat", async (req, res) => {
   try {
@@ -297,7 +277,7 @@ app.post("/api/chat", async (req, res) => {
 
     conversations[sessionId] = trimConversation(conversations[sessionId]);
 
-    const response = await client.responses.create({
+    const response = await openaiClient.responses.create({
       model: "gpt-4.1-mini",
       input: conversations[sessionId],
       temperature: 0.7,
@@ -328,7 +308,7 @@ app.post("/api/chat", async (req, res) => {
 });
 
 /* =========================
-   Image Edit
+   Gemini Image Edit Only
 ========================= */
 app.post("/api/image", async (req, res) => {
   try {
@@ -369,42 +349,61 @@ app.post("/api/image", async (req, res) => {
       });
     }
 
-    const size = OPENAI_SIZE_MAP[requestedAspect];
-    const prompt = buildEditPrompt(userPrompt, requestedAspect);
+    const prompt = buildGeminiEditPrompt(userPrompt, requestedAspect);
 
-    const file = await toFile(parsed.buffer, "product.png", {
-      type: parsed.mime,
+    const response = await googleClient.models.generateContent({
+      model: "gemini-2.5-flash-image",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: parsed.mime,
+                data: parsed.buffer.toString("base64"),
+              },
+            },
+          ],
+        },
+      ],
+      config: {
+        responseModalities: [Modality.IMAGE],
+        imageConfig: {
+          aspectRatio: requestedAspect === "auto" ? "1:1" : requestedAspect,
+        },
+      },
     });
 
-    const result = await client.images.edit({
-      model: "gpt-image-1.5",
-      image: file,
-      prompt,
-      size,
-      output_format: "png",
-    });
+    let imageBase64 = null;
 
-    const b64 = result?.data?.[0]?.b64_json;
+    for (const part of response?.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData?.data) {
+        imageBase64 = part.inlineData.data;
+        break;
+      }
+    }
 
-    if (!b64) {
+    if (!imageBase64) {
       return res.status(500).json({
         error: "NO_IMAGE_RETURNED",
-        message: "No image returned from the model.",
+        message: "No image returned from Gemini.",
       });
     }
 
     usage.count += 1;
 
     return res.json({
-      b64,
+      b64: imageBase64,
       aspect: requestedAspect,
-      size,
       remainingToday: Math.max(0, DAILY_IMAGE_LIMIT - usage.count),
+      provider: "gemini",
+      model: "gemini-3-pro-image-preview",
     });
   } catch (error) {
-    console.error("IMAGE ERROR:", error);
+    console.error("GEMINI IMAGE ERROR:", error);
     return res.status(500).json({
-      error: "IMAGE_ERROR",
+      error: "GEMINI_IMAGE_ERROR",
       message: String(error?.message || error),
     });
   }
