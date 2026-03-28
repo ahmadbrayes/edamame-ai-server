@@ -989,15 +989,23 @@ function renderScript(text){
 
 function renderMoneyResponse(text){
   const safeText = String(text || "").trim();
+
   if (!safeText) {
     addMsg("No reply.", "ai");
     return;
   }
 
+  const hasMoneyCards = /(hook|offer|cta|content idea|money angle|sales angle)\s*:/i.test(safeText);
+  if (hasMoneyCards) {
+    renderMixedMoneyResponse(safeText);
+    return;
+  }
+
   if (renderScript(safeText)) return;
+
   if (renderCaption(safeText)) return;
 
-  renderMixedMoneyResponse(safeText);
+  addMsg(safeText, "ai");
 }
 
 function setLoadingState(loading){
