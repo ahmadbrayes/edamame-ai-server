@@ -456,43 +456,30 @@ app.get("/health", (req, res) => {
 /* =========================
    Upload Product
 ========================= */
-app.post("/api/product", (req, res) => {
+app.post("/api/reset", (req, res) => {
   try {
     const sessionId = getSessionId(req, res);
     if (!sessionId) return;
 
-    const dataUrl = String(req.body?.imageDataUrl || "").trim();
+    delete conversations[sessionId];
+    delete productImageBySession[sessionId];
+    delete sessionMeta[sessionId];
 
-    if (!dataUrl.startsWith("data:image/")) {
-      return res.status(400).json({
-        error: "INVALID_IMAGE",
-        message: "Send a valid base64 image.",
-      });
-    }
-
-    const parsed = parseDataUrlToBuffer(dataUrl);
-    if (!parsed) {
-      return res.status(400).json({
-        error: "INVALID_IMAGE",
-        message: "Unsupported or invalid image format.",
-      });
-    }
-
-    productImageBySession[sessionId] = dataUrl;
+    // مهم: لا تمسح dailyUsage
+    // حتى يضل عداد الصور اليومي كما هو
 
     return res.json({
       ok: true,
-      message: "Product image uploaded successfully.",
+      message: "Session reset successfully.",
     });
   } catch (error) {
-    console.error("PRODUCT UPLOAD ERROR:", error);
+    console.error("RESET ERROR:", error);
     return res.status(500).json({
-      error: "UPLOAD_ERROR",
+      error: "RESET_ERROR",
       message: String(error?.message || error),
     });
   }
 });
-
 /* =========================
    Chat / Strategy / Caption requests
 ========================= */
