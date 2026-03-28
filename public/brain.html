@@ -16,6 +16,10 @@
   --radius:18px;
   --danger:#d9534f;
   --dangerDark:#bf433f;
+  --money1:#00ff88;
+  --money2:#00cc66;
+  --moneyBg:#07140d;
+  --moneyBg2:#000000;
 }
 
 *{box-sizing:border-box;}
@@ -27,9 +31,37 @@ html,body{
   background:var(--bg);
   color:var(--text);
   overflow:hidden;
+  transition:background .45s ease, color .35s ease;
+}
+
+body.money-mode{
+  background:
+    radial-gradient(circle at 20% 20%, rgba(0,255,136,.14), transparent 25%),
+    radial-gradient(circle at 80% 30%, rgba(0,204,102,.10), transparent 25%),
+    radial-gradient(circle at center, #0c1f14 0%, #040905 55%, #000 100%);
+  color:#eefcf4;
+}
+
+*{box-sizing:border-box;}
+
+#moneyParticles{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  z-index:0;
+  opacity:0;
+  transition:opacity .35s ease;
+}
+
+body.money-mode #moneyParticles{
+  opacity:1;
 }
 
 .wrap{
+  position:relative;
+  z-index:1;
   height:100dvh;
   width:min(1000px,100%);
   margin:0 auto;
@@ -56,12 +88,24 @@ header{
   margin:0;
   font-size:22px;
   color:var(--purple);
+  transition:color .35s ease, text-shadow .35s ease;
+}
+
+body.money-mode .brand h1{
+  color:#dffff0;
+  text-shadow:0 0 18px rgba(0,255,136,.18);
 }
 
 .brand p{
   margin:0;
   font-size:13px;
   opacity:.75;
+  transition:color .35s ease, opacity .35s ease;
+}
+
+body.money-mode .brand p{
+  color:rgba(232,255,241,.78);
+  opacity:1;
 }
 
 .topControls{
@@ -71,29 +115,64 @@ header{
   flex-wrap:wrap;
 }
 
-.uploadTop,
-.resetTop{
+.uploadTop{
   color:white;
   border:none;
   padding:12px 18px;
   border-radius:12px;
   font-weight:600;
   cursor:pointer;
-  transition:.2s;
-}
-
-.uploadTop{
+  transition:.22s ease;
   background:var(--green);
 }
+
 .uploadTop:hover{
   background:var(--greenDark);
+  transform:translateY(-1px);
 }
 
-.resetTop{
-  background:var(--danger);
+.moneyBtn{
+  background:linear-gradient(135deg,var(--money1),var(--money2));
+  color:#00140a;
+  border:none;
+  padding:12px 18px;
+  border-radius:12px;
+  font-weight:800;
+  cursor:pointer;
+  transition:.22s ease;
+  position:relative;
+  overflow:hidden;
 }
-.resetTop:hover{
-  background:var(--dangerDark);
+
+.moneyBtn:hover{
+  transform:translateY(-1px) scale(1.03);
+  box-shadow:0 0 20px rgba(0,255,136,.35);
+}
+
+.moneyBtn::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:-120%;
+  width:80%;
+  height:100%;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+  transform:skewX(-20deg);
+}
+
+.moneyBtn:hover::before{
+  animation:shine 1s ease;
+}
+
+@keyframes shine{
+  to{ left:140%; }
+}
+
+.money-glow{
+  box-shadow:
+    0 0 0 1px rgba(0,255,136,.25),
+    0 0 22px rgba(0,255,136,.22),
+    0 0 44px rgba(0,255,136,.12);
 }
 
 .select{
@@ -123,10 +202,17 @@ header{
     6px 6px,
     100% 100%;
   background-repeat:no-repeat;
+  transition:box-shadow .25s ease, background .25s ease, color .25s ease;
 }
 .select:focus{
   outline:none;
   box-shadow:0 0 0 4px rgba(142,124,195,.22);
+}
+
+body.money-mode .select{
+  background:#13291d;
+  color:#f1fff7;
+  box-shadow:inset 0 0 0 1px rgba(0,255,136,.15);
 }
 
 .productStatus{
@@ -137,10 +223,16 @@ header{
   border-radius:14px;
   padding:10px 12px;
   min-height:56px;
+  transition:background .35s ease, box-shadow .35s ease;
 }
 
 .productStatus.show{
   display:flex;
+}
+
+body.money-mode .productStatus{
+  background:rgba(14,25,18,.9);
+  box-shadow:0 8px 28px rgba(0,0,0,.24);
 }
 
 .productThumb{
@@ -164,8 +256,17 @@ header{
   font-size:13px;
 }
 
+body.money-mode .productStatusText strong{
+  color:#dffff0;
+}
+
 .productStatusText span{
   opacity:.75;
+}
+
+body.money-mode .productStatusText span{
+  color:#caefd7;
+  opacity:1;
 }
 
 .chat{
@@ -181,6 +282,19 @@ header{
   gap:12px;
   box-shadow:0 10px 30px rgba(0,0,0,.08);
   padding-bottom:90px;
+  transition:background .35s ease, color .35s ease, box-shadow .35s ease, border-color .35s ease;
+  border:1px solid transparent;
+}
+
+body.money-mode .chat{
+  background:rgba(10,14,11,.86);
+  color:#effff5;
+  border-color:rgba(0,255,136,.08);
+  box-shadow:
+    0 14px 40px rgba(0,0,0,.3),
+    0 0 0 1px rgba(0,255,136,.05),
+    inset 0 1px 0 rgba(255,255,255,.02);
+  backdrop-filter:blur(8px);
 }
 
 .msg{
@@ -191,6 +305,18 @@ header{
   line-height:1.5;
   white-space:pre-wrap;
   word-break:break-word;
+  animation:msgIn .22s ease;
+}
+
+@keyframes msgIn{
+  from{
+    transform:translateY(6px);
+    opacity:0;
+  }
+  to{
+    transform:translateY(0);
+    opacity:1;
+  }
 }
 
 .me{
@@ -199,9 +325,21 @@ header{
   color:white;
 }
 
+body.money-mode .me{
+  background:linear-gradient(135deg, #0ccf72, #07a958);
+  color:#03150b;
+  box-shadow:0 6px 20px rgba(0,255,136,.12);
+}
+
 .ai{
   align-self:flex-start;
   background:#f4f4f4;
+}
+
+body.money-mode .ai{
+  background:rgba(255,255,255,.06);
+  color:#effff5;
+  border:1px solid rgba(255,255,255,.04);
 }
 
 .err{
@@ -229,6 +367,11 @@ header{
   opacity:.72;
 }
 
+body.money-mode .imgMeta{
+  color:#d7f8e3;
+  opacity:.8;
+}
+
 .dlBtn{
   background:var(--green);
   color:white;
@@ -237,9 +380,16 @@ header{
   border-radius:10px;
   cursor:pointer;
   font-size:13px;
+  transition:.2s ease;
 }
 .dlBtn:hover{
   background:var(--greenDark);
+}
+
+body.money-mode .dlBtn{
+  background:linear-gradient(135deg,var(--money1),var(--money2));
+  color:#00140a;
+  font-weight:700;
 }
 
 .bar{
@@ -250,6 +400,11 @@ header{
   background:var(--bg);
   padding:12px 0 calc(12px + env(safe-area-inset-bottom));
   z-index:10;
+  transition:background .35s ease;
+}
+
+body.money-mode .bar{
+  background:transparent;
 }
 
 textarea{
@@ -263,10 +418,27 @@ textarea{
   background:#fff;
   color:var(--text);
   touch-action:manipulation;
+  transition:border-color .25s ease, background .35s ease, color .35s ease, box-shadow .35s ease;
 }
 textarea:focus{
   outline:none;
   border-color:var(--purple);
+}
+
+body.money-mode textarea{
+  background:rgba(12,18,14,.94);
+  color:#f4fff8;
+  border-color:rgba(0,255,136,.5);
+  box-shadow:
+    0 0 0 1px rgba(0,255,136,.12),
+    0 0 20px rgba(0,255,136,.08);
+}
+
+body.money-mode textarea:focus{
+  border-color:#00ff88;
+  box-shadow:
+    0 0 0 1px rgba(0,255,136,.16),
+    0 0 24px rgba(0,255,136,.16);
 }
 
 .sendBtn{
@@ -278,6 +450,7 @@ textarea:focus{
   font-weight:600;
   cursor:pointer;
   min-width:96px;
+  transition:.22s ease;
 }
 .sendBtn:hover{
   opacity:.9;
@@ -287,12 +460,38 @@ textarea:focus{
   cursor:not-allowed;
 }
 
+body.money-mode .sendBtn{
+  background:linear-gradient(135deg,var(--money1),var(--money2));
+  color:#00140a;
+  box-shadow:0 10px 24px rgba(0,255,136,.14);
+}
+
 footer{
   text-align:center;
   padding:4px 0 0;
   font-size:12px;
   color:#6b6b6b;
   opacity:.8;
+  transition:color .35s ease, opacity .35s ease;
+}
+
+body.money-mode footer{
+  color:#d5eedf;
+  opacity:.9;
+}
+
+.flashOverlay{
+  position:fixed;
+  inset:0;
+  background:radial-gradient(circle, rgba(0,255,136,.18), rgba(0,255,136,.08), transparent 68%);
+  z-index:9999;
+  pointer-events:none;
+  animation:flashFade .28s ease forwards;
+}
+
+@keyframes flashFade{
+  from{ opacity:1; }
+  to{ opacity:0; }
 }
 
 @media(max-width:700px){
@@ -307,6 +506,8 @@ footer{
 </head>
 
 <body>
+<canvas id="moneyParticles"></canvas>
+
 <div class="wrap">
 
   <header>
@@ -320,6 +521,8 @@ footer{
 
   <div class="topControls">
     <button id="uploadBtn" class="uploadTop">Upload product image</button>
+    <button id="moneyBtn" class="moneyBtn" type="button">💸 Make me money</button>
+    <audio id="cashSound" src="/sounds/cash.mp3" preload="auto"></audio>
 
     <select id="aspect" class="select" title="Aspect ratio">
       <option value="16:9">16:9</option>
@@ -327,8 +530,6 @@ footer{
       <option value="4:5" selected>4:5</option>
       <option value="1:1">1:1</option>
     </select>
-
-    <button id="resetBtn" class="resetTop" type="button">Reset session</button>
   </div>
 
   <div id="productStatus" class="productStatus">
@@ -368,7 +569,8 @@ const chat = document.getElementById("chat");
 const input = document.getElementById("input");
 const send = document.getElementById("send");
 const uploadBtn = document.getElementById("uploadBtn");
-const resetBtn = document.getElementById("resetBtn");
+const moneyBtn = document.getElementById("moneyBtn");
+const cashSound = document.getElementById("cashSound");
 const fileInput = document.getElementById("fileInput");
 const aspectSel = document.getElementById("aspect");
 
@@ -376,7 +578,13 @@ const productStatus = document.getElementById("productStatus");
 const productThumb = document.getElementById("productThumb");
 const productStatusSub = document.getElementById("productStatusSub");
 
+const particlesCanvas = document.getElementById("moneyParticles");
+const pctx = particlesCanvas.getContext("2d");
+
 let hasProduct = false;
+let particlesActive = false;
+let particles = [];
+let animationFrameId = null;
 
 function slugify(text){
   return (text || "")
@@ -532,32 +740,6 @@ async function uploadProduct(file){
   reader.readAsDataURL(file);
 }
 
-async function resetSession(){
-  try {
-    const r = await fetch("/api/reset", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId })
-    });
-
-    const data = await r.json().catch(() => ({}));
-
-    if (!r.ok) {
-      addMsg(data.message || data.error || "Reset failed.", "err");
-      return;
-    }
-
-    chat.innerHTML = "";
-    setProductState(false);
-    aspectSel.value = "4:5";
-    addMsg("Session reset. You can start fresh.", "ai");
-    addMsg("Ask for content strategy — or upload your product and create powerful marketing visuals.", "ai");
-    setTimeout(() => input.focus(), 50);
-  } catch (e) {
-    addMsg("Reset failed. Try again.", "err");
-  }
-}
-
 async function ask(){
   const text = input.value.trim();
   if (!text) return;
@@ -624,6 +806,112 @@ async function ask(){
   }
 }
 
+function flashMoney(){
+  const flash = document.createElement("div");
+  flash.className = "flashOverlay";
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 280);
+}
+
+function resizeParticlesCanvas(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  particlesCanvas.width = Math.floor(window.innerWidth * dpr);
+  particlesCanvas.height = Math.floor(window.innerHeight * dpr);
+  particlesCanvas.style.width = window.innerWidth + "px";
+  particlesCanvas.style.height = window.innerHeight + "px";
+  pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function createParticle(){
+  const fromLeft = Math.random() > 0.5;
+  return {
+    x: fromLeft ? Math.random() * window.innerWidth * 0.35 : window.innerWidth * 0.65 + Math.random() * window.innerWidth * 0.35,
+    y: Math.random() * window.innerHeight,
+    r: Math.random() * 2.2 + 0.6,
+    vx: (Math.random() - 0.5) * 0.22,
+    vy: -(Math.random() * 0.35 + 0.08),
+    alpha: Math.random() * 0.45 + 0.08,
+    hue: Math.random() > 0.5 ? 145 : 105
+  };
+}
+
+function initParticles(){
+  particles = [];
+  const count = Math.min(90, Math.max(36, Math.floor(window.innerWidth / 18)));
+  for (let i = 0; i < count; i++) {
+    particles.push(createParticle());
+  }
+}
+
+function drawParticles(){
+  if (!particlesActive) return;
+
+  pctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.alpha += (Math.random() - 0.5) * 0.015;
+
+    if (p.alpha < 0.05) p.alpha = 0.05;
+    if (p.alpha > 0.5) p.alpha = 0.5;
+
+    if (p.y < -10) {
+      particles[i] = createParticle();
+      particles[i].y = window.innerHeight + 10;
+    }
+
+    const gradient = pctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
+    gradient.addColorStop(0, `hsla(${p.hue}, 100%, 65%, ${p.alpha})`);
+    gradient.addColorStop(1, `hsla(${p.hue}, 100%, 65%, 0)`);
+
+    pctx.beginPath();
+    pctx.fillStyle = gradient;
+    pctx.arc(p.x, p.y, p.r * 5, 0, Math.PI * 2);
+    pctx.fill();
+
+    pctx.beginPath();
+    pctx.fillStyle = `hsla(${p.hue}, 100%, 75%, ${Math.min(p.alpha + 0.08, 0.6)})`;
+    pctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    pctx.fill();
+  }
+
+  animationFrameId = requestAnimationFrame(drawParticles);
+}
+
+function startParticles(){
+  if (particlesActive) return;
+  particlesActive = true;
+  resizeParticlesCanvas();
+  initParticles();
+  drawParticles();
+}
+
+function playCashSound(){
+  if (!cashSound) return;
+  cashSound.currentTime = 0;
+  cashSound.play().catch(() => {});
+}
+
+function activateMoneyMode(){
+  document.body.classList.add("money-mode");
+  moneyBtn.classList.add("money-glow");
+
+  playCashSound();
+
+  if (navigator.vibrate) {
+    navigator.vibrate(50);
+  }
+
+  flashMoney();
+  startParticles();
+
+  input.placeholder = "Type what you sell… let’s make money";
+  addMsg("Tell me what you sell.", "ai");
+  setTimeout(() => input.focus(), 50);
+}
+
 uploadBtn.onclick = () => fileInput.click();
 
 fileInput.onchange = (e) => {
@@ -632,7 +920,7 @@ fileInput.onchange = (e) => {
   fileInput.value = "";
 };
 
-resetBtn.onclick = resetSession;
+moneyBtn.onclick = activateMoneyMode;
 send.onclick = ask;
 
 input.onkeydown = (e) => {
@@ -642,7 +930,14 @@ input.onkeydown = (e) => {
   }
 };
 
-addMsg("Ask for content strategy — or upload your product and create powerful marketing visuals.", "ai");
+window.addEventListener("resize", () => {
+  if (particlesActive) {
+    resizeParticlesCanvas();
+    initParticles();
+  }
+});
+
+addMsg("Press 'Make me money' and tell me what you sell.", "ai");
 </script>
 
 </body>
