@@ -408,6 +408,49 @@ body.money-mode .scriptLabel{
   color:#dffff0;
 }
 
+/* Caption UI */
+.captionWrap{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  width:min(820px,100%);
+  align-self:flex-start;
+}
+
+.captionBox{
+  background:#f7f7f7;
+  border-radius:14px;
+  padding:14px 16px;
+  border-left:4px solid #ff8a00;
+  animation:msgIn .2s ease;
+}
+
+.captionTitle{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:700;
+  margin-bottom:8px;
+  color:#b35f00;
+}
+
+.captionText{
+  line-height:1.65;
+  font-size:14px;
+  white-space:pre-wrap;
+}
+
+body.money-mode .captionBox{
+  background:rgba(255,255,255,.05);
+  color:#effff5;
+  border-left:4px solid #ffc14d;
+  border-top:1px solid rgba(255,255,255,.03);
+}
+
+body.money-mode .captionTitle{
+  color:#ffc14d;
+}
+
 /* Copy button */
 .copyBtn{
   margin-top:8px;
@@ -723,6 +766,41 @@ function createCopyButton(copyText){
   return btn;
 }
 
+function looksLikeCaption(text){
+  const t = String(text || "").trim();
+  if (!t) return false;
+
+  const hasHashtags = /(^|\s)#\w+/m.test(t);
+  const hasEmoji = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(t);
+  const hasMultipleLines = t.split("\n").filter(Boolean).length >= 3;
+  const hasColonLabels = /^(hook|offer|cta|intro|shot|scene|voice over|voiceover|caption)\s*:/im.test(t);
+
+  return !hasColonLabels && hasHashtags && (hasEmoji || hasMultipleLines);
+}
+
+function renderCaption(text){
+  const safeText = String(text || "").trim();
+  if (!safeText || !looksLikeCaption(safeText)) return false;
+
+  const wrap = document.createElement("div");
+  wrap.className = "captionWrap";
+
+  const box = document.createElement("div");
+  box.className = "captionBox";
+
+  box.innerHTML = `
+    <div class="captionTitle">✨ Ready-to-post caption</div>
+    <div class="captionText">${escapeHtml(safeText)}</div>
+  `;
+
+  box.appendChild(createCopyButton(safeText));
+  wrap.appendChild(box);
+
+  chat.appendChild(wrap);
+  scrollChatToBottom();
+  return true;
+}
+
 function renderCards(text){
   const safeText = String(text || "").trim();
   if (!safeText) return false;
@@ -890,6 +968,7 @@ function renderMoneyResponse(text){
 
   if (renderScript(safeText)) return;
   if (renderCards(safeText)) return;
+  if (renderCaption(safeText)) return;
 
   addMsg(safeText, "ai");
 }
@@ -1086,7 +1165,11 @@ async function ask(){
       if (currentMode === "money") {
         renderMoneyResponse(data.reply || "No reply.");
       } else {
-        addMsg(data.reply || "No reply.", "ai");
+        if (renderCaption(data.reply || "")) {
+          // caption rendered
+        } else {
+          addMsg(data.reply || "No reply.", "ai");
+        }
       }
     }
   } catch (e) {
