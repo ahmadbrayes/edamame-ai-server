@@ -893,8 +893,8 @@ function activateMoneyMode(){
     cashSound.play().catch(() => {});
   }
 
-  if (navigator.vibrate) {
-    navigator.vibrate(60);
+if (navigator.vibrate) {
+  navigator.vibrate([120, 60, 120, 60, 200]);
   }
 
   flashMoney();
