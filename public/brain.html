@@ -1206,13 +1206,15 @@ async function ask(){
 
       if (currentMode === "money") {
         renderMoneyResponse(data.reply || "No reply.");
-      } else {
-        if (renderCaption(data.reply || "")) {
-          // caption rendered
-        } else {
-          addMsg(data.reply || "No reply.", "ai");
-        }
-      }
+     } else {
+  if (renderCaption(data.reply || "")) {
+    captionRendered = true;
+  } else if (renderScript(data.reply || "")) {
+    // script rendered
+  } else {
+    addMsg(data.reply || "No reply.", "ai");
+  }
+}
     }
   } catch (e) {
     waiting.className = "msg err";
