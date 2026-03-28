@@ -789,7 +789,7 @@ function renderCaption(text){
   box.className = "captionBox";
 
   box.innerHTML = `
-    <div class="captionTitle">✨ Ready-to-post caption</div>
+    <div class="captionTitle">✨ Here is your caption.</div>
     <div class="captionText">${escapeHtml(safeText)}</div>
   `;
 
@@ -801,10 +801,7 @@ function renderCaption(text){
   return true;
 }
 
-function renderCards(text){
-  const safeText = String(text || "").trim();
-  if (!safeText) return false;
-
+function isMoneyCardTitle(title){
   const moneyKeywords = [
     "money angle",
     "sales angle",
@@ -823,53 +820,84 @@ function renderCards(text){
     "pain point"
   ];
 
+  const normalizedTitle = String(title || "").trim().toLowerCase();
+
+  return moneyKeywords.some(keyword =>
+    normalizedTitle === keyword || normalizedTitle.includes(keyword)
+  );
+}
+
+function renderMixedMoneyResponse(text){
+  const safeText = String(text || "").trim();
+
+  if (!safeText) {
+    addMsg("No reply.", "ai");
+    return;
+  }
+
   const lines = safeText
     .split("\n")
     .map(line => line.trim())
     .filter(Boolean);
 
-  const parsedCards = [];
+  let introLines = [];
+  let closingLines = [];
+  let parsedCards = [];
+  let foundFirstCard = false;
 
   lines.forEach(line => {
     const firstColonIndex = line.indexOf(":");
-    if (firstColonIndex === -1) return;
 
-    const title = line.slice(0, firstColonIndex).trim();
-    const content = line.slice(firstColonIndex + 1).trim();
-    const normalizedTitle = title.toLowerCase();
+    if (firstColonIndex !== -1) {
+      const title = line.slice(0, firstColonIndex).trim();
+      const content = line.slice(firstColonIndex + 1).trim();
 
-    if (!title || !content) return;
+      if (title && content && isMoneyCardTitle(title)) {
+        foundFirstCard = true;
+        parsedCards.push({ title, content });
+        return;
+      }
+    }
 
-    const matches = moneyKeywords.some(keyword =>
-      normalizedTitle === keyword || normalizedTitle.includes(keyword)
-    );
-
-    if (!matches) return;
-
-    parsedCards.push({ title, content });
+    if (!foundFirstCard) {
+      introLines.push(line);
+    } else {
+      closingLines.push(line);
+    }
   });
 
-  if (!parsedCards.length) return false;
+  if (introLines.length) {
+    addMsg(introLines.join("\n"), "ai");
+  }
 
-  const container = document.createElement("div");
-  container.className = "cards";
+  if (parsedCards.length) {
+    const container = document.createElement("div");
+    container.className = "cards";
 
-  parsedCards.forEach(({ title, content }) => {
-    const card = document.createElement("div");
-    card.className = "card";
+    parsedCards.forEach(({ title, content }) => {
+      const card = document.createElement("div");
+      card.className = "card";
 
-    card.innerHTML = `
-      <span class="cardTitle">${escapeHtml(title)}</span>
-      <div class="cardContent">${escapeHtml(content)}</div>
-    `;
+      card.innerHTML = `
+        <span class="cardTitle">${escapeHtml(title)}</span>
+        <div class="cardContent">${escapeHtml(content)}</div>
+      `;
 
-    card.appendChild(createCopyButton(content));
-    container.appendChild(card);
-  });
+      card.appendChild(createCopyButton(content));
+      container.appendChild(card);
+    });
 
-  chat.appendChild(container);
-  scrollChatToBottom();
-  return true;
+    chat.appendChild(container);
+    scrollChatToBottom();
+  }
+
+  if (closingLines.length) {
+    addMsg(closingLines.join("\n"), "ai");
+  }
+
+  if (!introLines.length && !parsedCards.length && !closingLines.length) {
+    addMsg(safeText, "ai");
+  }
 }
 
 function getScriptIcon(label){
@@ -967,10 +995,9 @@ function renderMoneyResponse(text){
   }
 
   if (renderScript(safeText)) return;
-  if (renderCards(safeText)) return;
   if (renderCaption(safeText)) return;
 
-  addMsg(safeText, "ai");
+  renderMixedMoneyResponse(safeText);
 }
 
 function setLoadingState(loading){
