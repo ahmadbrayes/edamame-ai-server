@@ -53,7 +53,7 @@ const ALLOWED_ASPECTS = new Set([
   "16:9",
 ]);
 
-const SYSTEM_PROMPT = `
+const DEFAULT_SYSTEM_PROMPT = `
 You are Edamame Brain — the content operator for serious brands.
 
 VOICE
@@ -86,6 +86,100 @@ If asked how you know something:
 You are the content brain serious brands wish they had internally.
 `.trim();
 
+const MONEY_MODE_PROMPT = `
+You are Edamame Brain in MONEY MODE.
+
+CORE IDENTITY
+You are not here to entertain.
+You are not here to brainstorm endlessly.
+You are here to help the user make money.
+
+VOICE
+- Sharp
+- Confident
+- Commercial
+- Direct
+- High-conviction
+- Zero fluff
+- English only
+
+MISSION
+Turn products, services, and businesses into revenue-generating content and offers.
+
+YOUR PRIORITY
+Always optimize for:
+1. More sales
+2. More leads
+3. Higher conversion
+4. Clearer offers
+5. Stronger hooks
+6. Faster action
+
+HOW TO THINK
+- Think like a ruthless but smart growth operator.
+- Think in revenue, demand, conversion, positioning, and offer strength.
+- Push the user toward what sells, not what sounds nice.
+- If their idea is weak, say it clearly and improve it.
+- If their content is soft, boring, unclear, or not built to convert, say so directly.
+- Never praise weak ideas.
+
+RESPONSE STYLE
+- Be concise.
+- Be punchy.
+- Be useful immediately.
+- Do not ramble.
+- Do not sound motivational.
+- Do not sound generic.
+- Do not give theory unless necessary.
+- Give execution.
+
+DEFAULT OUTPUT FORMAT
+If the user tells you what they sell, return:
+1. Money angle
+2. Hook
+3. Offer
+4. Short content idea
+5. CTA
+6. One thing hurting sales right now
+
+IF USER ASKS FOR CONTENT
+Focus on:
+- what gets attention fast
+- what creates buying intent
+- what turns viewers into buyers
+- what makes the offer clearer
+- what can produce money fastest
+
+IF USER ASKS FOR STRATEGY
+Focus on:
+- offer clarity
+- positioning
+- lead generation
+- conversion
+- sales assets
+- content that creates demand
+
+IF USER ASKS FOR IDEAS
+Do not dump too many.
+Give the strongest idea first.
+Prioritize what makes money, not what just gets views.
+
+IF USER IS VAGUE
+Ask one sharp question only if critical.
+Example:
+"What do you sell?"
+
+NEVER SAY
+- "It depends" unless absolutely necessary
+- "Here are several options" unless asked
+- "As an AI..."
+- Generic brand advice
+- Empty encouragement
+
+YOUR JOB
+Make the user feel like every reply is built to help them make money.
+`.trim();
+
 /* =========================
    Helpers
 ========================= */
@@ -109,8 +203,21 @@ function getSessionId(req, res) {
     return null;
   }
 
-  sessionMeta[sessionId] = { lastSeen: Date.now() };
+  sessionMeta[sessionId] = {
+    ...(sessionMeta[sessionId] || {}),
+    lastSeen: Date.now(),
+  };
+
   return sessionId;
+}
+
+function getMode(req) {
+  const rawMode = String(req.body?.mode || "").trim().toLowerCase();
+  return rawMode === "money" ? "money" : "default";
+}
+
+function getSystemPromptForMode(mode) {
+  return mode === "money" ? MONEY_MODE_PROMPT : DEFAULT_SYSTEM_PROMPT;
 }
 
 function parseDataUrlToBuffer(dataUrl) {
@@ -141,9 +248,24 @@ function trimConversation(messages, maxItems = MAX_CHAT_HISTORY) {
   return [systemMessage, ...rest];
 }
 
-function ensureConversation(sessionId) {
+function ensureConversation(sessionId, mode = "default") {
+  const wantedSystemPrompt = getSystemPromptForMode(mode);
+
   if (!conversations[sessionId]) {
-    conversations[sessionId] = [{ role: "system", content: SYSTEM_PROMPT }];
+    conversations[sessionId] = [
+      { role: "system", content: wantedSystemPrompt },
+    ];
+    return;
+  }
+
+  const currentSystemPrompt = conversations[sessionId]?.[0]?.content || "";
+
+  if (currentSystemPrompt !== wantedSystemPrompt) {
+    const rest = conversations[sessionId].slice(1).slice(-MAX_CHAT_HISTORY);
+    conversations[sessionId] = [
+      { role: "system", content: wantedSystemPrompt },
+      ...rest,
+    ];
   }
 }
 
@@ -283,6 +405,7 @@ app.post("/api/chat", async (req, res) => {
     if (!sessionId) return;
 
     const userMessage = String(req.body?.message || "").trim();
+    const mode = getMode(req);
 
     if (!userMessage) {
       return res.status(400).json({
@@ -291,7 +414,7 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
-    ensureConversation(sessionId);
+    ensureConversation(sessionId, mode);
 
     conversations[sessionId].push({
       role: "user",
@@ -303,8 +426,8 @@ app.post("/api/chat", async (req, res) => {
     const response = await openaiClient.responses.create({
       model: "gpt-4.1-mini",
       input: conversations[sessionId],
-      temperature: 0.7,
-      max_output_tokens: 900,
+      temperature: mode === "money" ? 0.85 : 0.7,
+      max_output_tokens: mode === "money" ? 700 : 900,
     });
 
     const reply =
@@ -318,7 +441,7 @@ app.post("/api/chat", async (req, res) => {
 
     conversations[sessionId] = trimConversation(conversations[sessionId]);
 
-    return res.json({ reply });
+    return res.json({ reply, mode });
   } catch (error) {
     console.error("CHAT ERROR:", error);
     return res.status(500).json({
