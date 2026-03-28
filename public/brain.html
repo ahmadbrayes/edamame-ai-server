@@ -329,6 +329,64 @@ body.money-mode .ai{
   color:#b30021;
 }
 
+/* Cards UI */
+.cards{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  width:min(780px,100%);
+  align-self:flex-start;
+}
+
+.card{
+  padding:14px 16px;
+  border-radius:14px;
+  background:#f4f4f4;
+  border-left:4px solid var(--purple);
+  font-size:14px;
+  line-height:1.5;
+  animation:msgIn .2s ease;
+}
+
+.cardTitle{
+  display:block;
+  margin-bottom:6px;
+  font-weight:700;
+  color:var(--purple);
+}
+
+body.money-mode .card{
+  background:rgba(255,255,255,.05);
+  border-left:4px solid var(--money1);
+  color:#eafff3;
+  border-top:1px solid rgba(255,255,255,.03);
+}
+
+body.money-mode .cardTitle{
+  color:var(--money1);
+}
+
+.copyBtn{
+  margin-top:8px;
+  padding:6px 10px;
+  border:none;
+  border-radius:8px;
+  font-size:12px;
+  cursor:pointer;
+  background:#ddd;
+  transition:.2s ease;
+}
+
+.copyBtn:hover{
+  opacity:.85;
+}
+
+body.money-mode .copyBtn{
+  background:#00ff88;
+  color:#00140a;
+  font-weight:700;
+}
+
 .imgWrap{
   display:flex;
   flex-direction:column;
@@ -589,6 +647,82 @@ function addMsg(text, cls){
   return d;
 }
 
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function renderCards(text){
+  const safeText = String(text || "").trim();
+
+  if (!safeText) {
+    addMsg("No reply.", "ai");
+    return;
+  }
+
+  const lines = safeText
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const cardLines = lines.filter(line => line.includes(":"));
+
+  if (!cardLines.length) {
+    addMsg(safeText, "ai");
+    return;
+  }
+
+  const container = document.createElement("div");
+  container.className = "cards";
+
+  cardLines.forEach(line => {
+    const firstColonIndex = line.indexOf(":");
+    const title = line.slice(0, firstColonIndex).trim();
+    const content = line.slice(firstColonIndex + 1).trim();
+
+    if (!title || !content) return;
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <span class="cardTitle">${escapeHtml(title)}</span>
+      <div class="cardContent">${escapeHtml(content)}</div>
+      <button class="copyBtn" type="button">Copy</button>
+    `;
+
+    const btn = card.querySelector(".copyBtn");
+    btn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(content);
+        btn.textContent = "Copied ✓";
+        setTimeout(() => {
+          btn.textContent = "Copy";
+        }, 1500);
+      } catch {
+        btn.textContent = "Failed";
+        setTimeout(() => {
+          btn.textContent = "Copy";
+        }, 1500);
+      }
+    };
+
+    container.appendChild(card);
+  });
+
+  if (!container.children.length) {
+    addMsg(safeText, "ai");
+    return;
+  }
+
+  chat.appendChild(container);
+  scrollChatToBottom();
+}
+
 function setLoadingState(loading){
   send.disabled = loading;
   send.textContent = loading ? "..." : "Send";
@@ -777,7 +911,12 @@ async function ask(){
         addMsg("No image returned.", "err");
       }
     } else {
-      waiting.textContent = data.reply || "No reply.";
+      waiting.remove();
+      if (currentMode === "money") {
+        renderCards(data.reply || "No reply.");
+      } else {
+        addMsg(data.reply || "No reply.", "ai");
+      }
     }
   } catch (e) {
     waiting.className = "msg err";
@@ -893,8 +1032,8 @@ function activateMoneyMode(){
     cashSound.play().catch(() => {});
   }
 
-if (navigator.vibrate) {
-  navigator.vibrate([120, 60, 120, 60, 200]);
+  if (navigator.vibrate) {
+    navigator.vibrate([120, 60, 120, 60, 200]);
   }
 
   flashMoney();
@@ -911,10 +1050,7 @@ function deactivateMoneyMode(){
   moneyBtn.classList.remove("active");
   moneyBtn.textContent = "💸 Make me money";
 
-  input.placeholder = hasProduct
-    ? "Describe what you want..."
-    : "Describe what you want...";
-
+  input.placeholder = "Describe what you want...";
   stopParticles();
   addMsg("Back to normal mode.", "ai");
   setTimeout(() => input.focus(), 50);
