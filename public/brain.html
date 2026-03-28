@@ -725,22 +725,24 @@ function createCopyButton(copyText){
 
 function renderCards(text){
   const safeText = String(text || "").trim();
+  if (!safeText) return false;
 
-  if (!safeText) {
-    addMsg("No reply.", "ai");
-    return false;
-  }
-
-  const allowedTitles = [
+  const moneyKeywords = [
     "money angle",
+    "sales angle",
     "hook",
     "offer",
     "cta",
+    "call to action",
     "content idea",
     "idea",
+    "ad idea",
+    "angle",
     "what’s hurting sales right now",
     "whats hurting sales right now",
-    "what is hurting sales right now"
+    "what is hurting sales right now",
+    "problem",
+    "pain point"
   ];
 
   const lines = safeText
@@ -759,7 +761,12 @@ function renderCards(text){
     const normalizedTitle = title.toLowerCase();
 
     if (!title || !content) return;
-    if (!allowedTitles.includes(normalizedTitle)) return;
+
+    const matches = moneyKeywords.some(keyword =>
+      normalizedTitle === keyword || normalizedTitle.includes(keyword)
+    );
+
+    if (!matches) return;
 
     parsedCards.push({ title, content });
   });
@@ -803,13 +810,9 @@ function getScriptIcon(label){
 
 function renderScript(text){
   const safeText = String(text || "").trim();
+  if (!safeText) return false;
 
-  if (!safeText) {
-    addMsg("No reply.", "ai");
-    return false;
-  }
-
-  const scriptTitles = [
+  const scriptKeywords = [
     "intro",
     "hook",
     "shot",
@@ -840,8 +843,8 @@ function renderScript(text){
 
     if (!label || !content) return;
 
-    const matches = scriptTitles.some(title =>
-      normalized === title || normalized.startsWith(title + " ")
+    const matches = scriptKeywords.some(keyword =>
+      normalized === keyword || normalized.startsWith(keyword + " ")
     );
 
     if (!matches) return;
@@ -879,9 +882,16 @@ function renderScript(text){
 }
 
 function renderMoneyResponse(text){
-  if (renderCards(text)) return;
-  if (renderScript(text)) return;
-  addMsg(text || "No reply.", "ai");
+  const safeText = String(text || "").trim();
+  if (!safeText) {
+    addMsg("No reply.", "ai");
+    return;
+  }
+
+  if (renderScript(safeText)) return;
+  if (renderCards(safeText)) return;
+
+  addMsg(safeText, "ai");
 }
 
 function setLoadingState(loading){
