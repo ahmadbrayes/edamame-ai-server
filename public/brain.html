@@ -1187,22 +1187,21 @@ async function ask(){
       ].filter(Boolean).join(" • ");
 
       if (data.b64) {
-  await addImage(data.b64, text, {
-    aspect: data.aspect,
-    model: data.model,
-    remainingToday: data.remainingToday
-  });
+        await addImage(data.b64, text, {
+          aspect: data.aspect,
+          model: data.model,
+          remainingToday: data.remainingToday
+        });
 
-  if (data.helperMessage) {
-    addMsg(data.helperMessage, "ai");
-  }
-}
-        
+        if (data.helperMessage) {
+          addMsg(data.helperMessage, "ai");
+        }
       } else {
         addMsg("No image returned.", "err");
       }
     } else {
       waiting.remove();
+
       if (currentMode === "money") {
         renderMoneyResponse(data.reply || "No reply.");
       } else {
