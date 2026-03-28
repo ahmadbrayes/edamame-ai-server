@@ -1193,6 +1193,8 @@ async function ask(){
           remainingToday: data.remainingToday
         });
 
+        setProductState(false);
+
         if (data.helperMessage) {
           addMsg(data.helperMessage, "ai");
         }
