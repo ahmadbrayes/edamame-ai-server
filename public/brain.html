@@ -64,7 +64,6 @@ header{
   opacity:.75;
 }
 
-/* top controls */
 .topControls{
   display:flex;
   gap:10px;
@@ -97,7 +96,6 @@ header{
   background:var(--dangerDark);
 }
 
-/* dropdown */
 .select{
   height:44px;
   padding:0 14px;
@@ -131,7 +129,6 @@ header{
   box-shadow:0 0 0 4px rgba(142,124,195,.22);
 }
 
-/* product status */
 .productStatus{
   display:none;
   align-items:center;
@@ -171,7 +168,6 @@ header{
   opacity:.75;
 }
 
-/* chat */
 .chat{
   flex:1;
   min-height:0;
@@ -246,7 +242,6 @@ header{
   background:var(--greenDark);
 }
 
-/* input bar */
 .bar{
   display:flex;
   gap:10px;
@@ -292,7 +287,6 @@ textarea:focus{
   cursor:not-allowed;
 }
 
-/* footer */
 footer{
   text-align:center;
   padding:4px 0 0;
@@ -387,9 +381,9 @@ let hasProduct = false;
 function slugify(text){
   return (text || "")
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[^a-z0-9\\s-]/g, "")
     .trim()
-    .replace(/\s+/g, "-")
+    .replace(/\\s+/g, "-")
     .slice(0, 50) || "image";
 }
 
