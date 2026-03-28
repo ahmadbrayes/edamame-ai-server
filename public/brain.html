@@ -438,6 +438,7 @@ body.money-mode .scriptLabel{
   line-height:1.65;
   font-size:14px;
   white-space:pre-wrap;
+  margin-top:10px;
 }
 
 body.money-mode .captionBox{
@@ -684,8 +685,7 @@ body.money-mode footer{
 </div>
 
 <script>
-const savedSession = localStorage.getItem("edamame_sessionId");
-const sessionId = savedSession || crypto.randomUUID();
+let sessionId = localStorage.getItem("edamame_sessionId") || crypto.randomUUID();
 localStorage.setItem("edamame_sessionId", sessionId);
 
 const chat = document.getElementById("chat");
@@ -766,21 +766,69 @@ function createCopyButton(copyText){
   return btn;
 }
 
-function looksLikeCaption(text){
-  const t = String(text || "").trim();
-  if (!t) return false;
-
-  const hasHashtags = /(^|\s)#\w+/m.test(t);
-  const hasEmoji = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(t);
-  const hasMultipleLines = t.split("\n").filter(Boolean).length >= 3;
-  const hasColonLabels = /^(hook|offer|cta|intro|shot|scene|voice over|voiceover|caption)\s*:/im.test(t);
-
-  return !hasColonLabels && hasHashtags && (hasEmoji || hasMultipleLines);
-}
-
 function renderCaption(text){
   const safeText = String(text || "").trim();
-  if (!safeText || !looksLikeCaption(safeText)) return false;
+  if (!safeText) return false;
+
+  const lines = safeText
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const hasCaptionHeader = /here is your caption/i.test(safeText);
+  const hasCaptionField = /^caption\s*:/im.test(safeText);
+  const hasCtaField = /^cta\s*:/im.test(safeText);
+  const hasHashtagsField = /^hashtags\s*:/im.test(safeText);
+  const hasHashtagSymbol = /(^|\s)#\w+/m.test(safeText);
+
+  const looksStructuredCaption =
+    hasCaptionHeader || hasCaptionField || hasCtaField || hasHashtagsField || hasHashtagSymbol;
+
+  if (!looksStructuredCaption) return false;
+
+  let intro = "";
+  let captionText = "";
+  let ctaText = "";
+  let hashtagsText = "";
+
+  lines.forEach(line => {
+    if (/^here is your caption\.?$/i.test(line)) {
+      intro = "Here is your caption.";
+      return;
+    }
+
+    const colonIndex = line.indexOf(":");
+    if (colonIndex === -1) {
+      if (!captionText && !ctaText && !hashtagsText) {
+        captionText += (captionText ? "\n" : "") + line;
+      } else if (hashtagsText) {
+        hashtagsText += " " + line;
+      } else {
+        captionText += (captionText ? "\n" : "") + line;
+      }
+      return;
+    }
+
+    const label = line.slice(0, colonIndex).trim().toLowerCase();
+    const value = line.slice(colonIndex + 1).trim();
+
+    if (label === "caption") {
+      captionText = value;
+    } else if (label === "cta") {
+      ctaText = value;
+    } else if (label === "hashtags") {
+      hashtagsText = value;
+    }
+  });
+
+  if (!intro) intro = "Here is your caption.";
+
+  const combinedText = [
+    intro,
+    captionText ? `Caption: ${captionText}` : "",
+    ctaText ? `CTA: ${ctaText}` : "",
+    hashtagsText ? `Hashtags: ${hashtagsText}` : ""
+  ].filter(Boolean).join("\n\n");
 
   const wrap = document.createElement("div");
   wrap.className = "captionWrap";
@@ -789,11 +837,13 @@ function renderCaption(text){
   box.className = "captionBox";
 
   box.innerHTML = `
-    <div class="captionTitle">✨ Here is your caption.</div>
-    <div class="captionText">${escapeHtml(safeText)}</div>
+    <div class="captionTitle">✨ ${escapeHtml(intro)}</div>
+    ${captionText ? `<div class="captionText"><strong>Caption:</strong><br>${escapeHtml(captionText)}</div>` : ""}
+    ${ctaText ? `<div class="captionText"><strong>CTA:</strong><br>${escapeHtml(ctaText)}</div>` : ""}
+    ${hashtagsText ? `<div class="captionText"><strong>Hashtags:</strong><br>${escapeHtml(hashtagsText)}</div>` : ""}
   `;
 
-  box.appendChild(createCopyButton(safeText));
+  box.appendChild(createCopyButton(combinedText));
   wrap.appendChild(box);
 
   chat.appendChild(wrap);
@@ -995,6 +1045,8 @@ function renderMoneyResponse(text){
     return;
   }
 
+  if (renderCaption(safeText)) return;
+
   const hasMoneyCards = /(hook|offer|cta|content idea|money angle|sales angle)\s*:/i.test(safeText);
   if (hasMoneyCards) {
     renderMixedMoneyResponse(safeText);
@@ -1002,8 +1054,6 @@ function renderMoneyResponse(text){
   }
 
   if (renderScript(safeText)) return;
-
-  if (renderCaption(safeText)) return;
 
   addMsg(safeText, "ai");
 }
@@ -1029,6 +1079,22 @@ function setProductState(enabled, previewDataUrl = ""){
     productThumb.removeAttribute("src");
     productStatusSub.textContent = "";
   }
+}
+
+async function resetSessionMemory(){
+  try {
+    await fetch("/api/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId })
+    });
+  } catch (e) {
+    console.error("RESET SESSION ERROR:", e);
+  }
+
+  hasProduct = false;
+  sessionStorage.removeItem("captionOffered");
+  setProductState(false);
 }
 
 async function watermarkDataUrl(dataUrl){
@@ -1150,8 +1216,32 @@ async function ask(){
 
   const waiting = addMsg("…", "ai");
 
-  const endpoint = hasProduct ? "/api/image" : "/api/chat";
-  const payload = hasProduct
+  const lowerText = text.toLowerCase().trim();
+
+  const isSimpleYes =
+    lowerText === "ok" ||
+    lowerText === "okay" ||
+    lowerText === "yes" ||
+    lowerText === "yeah" ||
+    lowerText === "yep" ||
+    lowerText === "sure" ||
+    lowerText === "do it" ||
+    lowerText === "go ahead" ||
+    lowerText === "yalla";
+
+  const wasOfferedCaption = sessionStorage.getItem("captionOffered") === "true";
+
+  const isCaptionRequest =
+    lowerText.includes("caption") ||
+    lowerText.includes("hashtags") ||
+    lowerText.includes("write a caption") ||
+    lowerText.includes("give me a caption") ||
+    lowerText.includes("caption with hashtags") ||
+    (wasOfferedCaption && isSimpleYes);
+
+  const endpoint = (hasProduct && !isCaptionRequest) ? "/api/image" : "/api/chat";
+
+  const payload = endpoint === "/api/image"
     ? {
         sessionId,
         prompt: text,
@@ -1178,7 +1268,7 @@ async function ask(){
       return;
     }
 
-    if (hasProduct) {
+    if (endpoint === "/api/image") {
       waiting.textContent = [
         "Done.",
         data.aspect ? `Aspect: ${data.aspect}` : "",
@@ -1197,6 +1287,7 @@ async function ask(){
 
         if (data.helperMessage) {
           addMsg(data.helperMessage, "ai");
+          sessionStorage.setItem("captionOffered", "true");
         }
       } else {
         addMsg("No image returned.", "err");
@@ -1204,17 +1295,27 @@ async function ask(){
     } else {
       waiting.remove();
 
+      let captionRendered = false;
+
       if (currentMode === "money") {
-        renderMoneyResponse(data.reply || "No reply.");
-     } else {
-  if (renderCaption(data.reply || "")) {
-    captionRendered = true;
-  } else if (renderScript(data.reply || "")) {
-    // script rendered
-  } else {
-    addMsg(data.reply || "No reply.", "ai");
-  }
-}
+        if (renderCaption(data.reply || "")) {
+          captionRendered = true;
+        } else {
+          renderMoneyResponse(data.reply || "No reply.");
+        }
+      } else {
+        if (renderCaption(data.reply || "")) {
+          captionRendered = true;
+        } else if (renderScript(data.reply || "")) {
+          // script rendered
+        } else {
+          addMsg(data.reply || "No reply.", "ai");
+        }
+      }
+
+      if (captionRendered || isCaptionRequest) {
+        sessionStorage.removeItem("captionOffered");
+      }
     }
   } catch (e) {
     waiting.className = "msg err";
@@ -1319,8 +1420,12 @@ function stopParticles(){
   pctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 }
 
-function activateMoneyMode(){
+async function activateMoneyMode(){
+  await resetSessionMemory();
+
   currentMode = "money";
+  chat.innerHTML = "";
+
   document.body.classList.add("money-mode");
   moneyBtn.classList.add("active");
   moneyBtn.textContent = "← Back to normal";
@@ -1342,14 +1447,19 @@ function activateMoneyMode(){
   setTimeout(() => input.focus(), 50);
 }
 
-function deactivateMoneyMode(){
+async function deactivateMoneyMode(){
+  await resetSessionMemory();
+
   currentMode = "default";
+  chat.innerHTML = "";
+
   document.body.classList.remove("money-mode");
   moneyBtn.classList.remove("active");
   moneyBtn.textContent = "💸 Make me money";
 
   input.placeholder = "Describe what you want...";
   stopParticles();
+
   addMsg("Back to normal mode.", "ai");
   setTimeout(() => input.focus(), 50);
 }
@@ -1362,11 +1472,11 @@ fileInput.onchange = (e) => {
   fileInput.value = "";
 };
 
-moneyBtn.onclick = () => {
+moneyBtn.onclick = async () => {
   if (currentMode === "default") {
-    activateMoneyMode();
+    await activateMoneyMode();
   } else {
-    deactivateMoneyMode();
+    await deactivateMoneyMode();
   }
 };
 
