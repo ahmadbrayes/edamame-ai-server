@@ -329,7 +329,7 @@ body.money-mode .ai{
   color:#b30021;
 }
 
-/* Cards UI */
+/* Money Cards */
 .cards{
   display:flex;
   flex-direction:column;
@@ -366,6 +366,49 @@ body.money-mode .cardTitle{
   color:var(--money1);
 }
 
+/* Script UI */
+.scriptWrap{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  width:min(820px,100%);
+  align-self:flex-start;
+}
+
+.scriptBlock{
+  background:#f7f7f7;
+  border-radius:14px;
+  padding:14px 16px;
+  border-left:4px solid #444;
+  animation:msgIn .2s ease;
+}
+
+.scriptLabel{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:700;
+  margin-bottom:8px;
+  color:#222;
+}
+
+.scriptText{
+  line-height:1.55;
+  font-size:14px;
+}
+
+body.money-mode .scriptBlock{
+  background:rgba(255,255,255,.05);
+  color:#effff5;
+  border-left:4px solid #8ae9b8;
+  border-top:1px solid rgba(255,255,255,.03);
+}
+
+body.money-mode .scriptLabel{
+  color:#dffff0;
+}
+
+/* Copy button */
 .copyBtn{
   margin-top:8px;
   padding:6px 10px;
@@ -656,71 +699,189 @@ function escapeHtml(str){
     .replaceAll("'", "&#39;");
 }
 
+function createCopyButton(copyText){
+  const btn = document.createElement("button");
+  btn.className = "copyBtn";
+  btn.type = "button";
+  btn.textContent = "Copy";
+
+  btn.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(copyText);
+      btn.textContent = "Copied ✓";
+      setTimeout(() => {
+        btn.textContent = "Copy";
+      }, 1500);
+    } catch {
+      btn.textContent = "Failed";
+      setTimeout(() => {
+        btn.textContent = "Copy";
+      }, 1500);
+    }
+  };
+
+  return btn;
+}
+
 function renderCards(text){
   const safeText = String(text || "").trim();
 
   if (!safeText) {
     addMsg("No reply.", "ai");
-    return;
+    return false;
   }
+
+  const allowedTitles = [
+    "money angle",
+    "hook",
+    "offer",
+    "cta",
+    "content idea",
+    "idea",
+    "what’s hurting sales right now",
+    "whats hurting sales right now",
+    "what is hurting sales right now"
+  ];
 
   const lines = safeText
     .split("\n")
     .map(line => line.trim())
     .filter(Boolean);
 
-  const cardLines = lines.filter(line => line.includes(":"));
+  const parsedCards = [];
 
-  if (!cardLines.length) {
-    addMsg(safeText, "ai");
-    return;
-  }
+  lines.forEach(line => {
+    const firstColonIndex = line.indexOf(":");
+    if (firstColonIndex === -1) return;
+
+    const title = line.slice(0, firstColonIndex).trim();
+    const content = line.slice(firstColonIndex + 1).trim();
+    const normalizedTitle = title.toLowerCase();
+
+    if (!title || !content) return;
+    if (!allowedTitles.includes(normalizedTitle)) return;
+
+    parsedCards.push({ title, content });
+  });
+
+  if (!parsedCards.length) return false;
 
   const container = document.createElement("div");
   container.className = "cards";
 
-  cardLines.forEach(line => {
-    const firstColonIndex = line.indexOf(":");
-    const title = line.slice(0, firstColonIndex).trim();
-    const content = line.slice(firstColonIndex + 1).trim();
-
-    if (!title || !content) return;
-
+  parsedCards.forEach(({ title, content }) => {
     const card = document.createElement("div");
     card.className = "card";
 
     card.innerHTML = `
       <span class="cardTitle">${escapeHtml(title)}</span>
       <div class="cardContent">${escapeHtml(content)}</div>
-      <button class="copyBtn" type="button">Copy</button>
     `;
 
-    const btn = card.querySelector(".copyBtn");
-    btn.onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(content);
-        btn.textContent = "Copied ✓";
-        setTimeout(() => {
-          btn.textContent = "Copy";
-        }, 1500);
-      } catch {
-        btn.textContent = "Failed";
-        setTimeout(() => {
-          btn.textContent = "Copy";
-        }, 1500);
-      }
-    };
-
+    card.appendChild(createCopyButton(content));
     container.appendChild(card);
   });
 
-  if (!container.children.length) {
-    addMsg(safeText, "ai");
-    return;
-  }
-
   chat.appendChild(container);
   scrollChatToBottom();
+  return true;
+}
+
+function getScriptIcon(label){
+  const l = label.toLowerCase();
+
+  if (l.includes("intro")) return "🎬";
+  if (l.includes("hook")) return "🪝";
+  if (l.includes("shot")) return "🎥";
+  if (l.includes("scene")) return "🎞️";
+  if (l.includes("voice")) return "🎤";
+  if (l.includes("caption")) return "✍️";
+  if (l.includes("cta")) return "📣";
+  if (l.includes("ending")) return "🏁";
+  return "🎬";
+}
+
+function renderScript(text){
+  const safeText = String(text || "").trim();
+
+  if (!safeText) {
+    addMsg("No reply.", "ai");
+    return false;
+  }
+
+  const scriptTitles = [
+    "intro",
+    "hook",
+    "shot",
+    "scene",
+    "voice over",
+    "voiceover",
+    "vo",
+    "caption",
+    "cta",
+    "ending",
+    "outro"
+  ];
+
+  const lines = safeText
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const parsedBlocks = [];
+
+  lines.forEach(line => {
+    const firstColonIndex = line.indexOf(":");
+    if (firstColonIndex === -1) return;
+
+    const label = line.slice(0, firstColonIndex).trim();
+    const content = line.slice(firstColonIndex + 1).trim();
+    const normalized = label.toLowerCase();
+
+    if (!label || !content) return;
+
+    const matches = scriptTitles.some(title =>
+      normalized === title || normalized.startsWith(title + " ")
+    );
+
+    if (!matches) return;
+
+    parsedBlocks.push({ label, content });
+  });
+
+  if (!parsedBlocks.length) return false;
+
+  const wrap = document.createElement("div");
+  wrap.className = "scriptWrap";
+
+  parsedBlocks.forEach(({ label, content }) => {
+    const block = document.createElement("div");
+    block.className = "scriptBlock";
+
+    const labelEl = document.createElement("div");
+    labelEl.className = "scriptLabel";
+    labelEl.innerHTML = `<span>${getScriptIcon(label)}</span><span>${escapeHtml(label)}</span>`;
+
+    const textEl = document.createElement("div");
+    textEl.className = "scriptText";
+    textEl.innerHTML = escapeHtml(content);
+
+    block.appendChild(labelEl);
+    block.appendChild(textEl);
+    block.appendChild(createCopyButton(content));
+
+    wrap.appendChild(block);
+  });
+
+  chat.appendChild(wrap);
+  scrollChatToBottom();
+  return true;
+}
+
+function renderMoneyResponse(text){
+  if (renderCards(text)) return;
+  if (renderScript(text)) return;
+  addMsg(text || "No reply.", "ai");
 }
 
 function setLoadingState(loading){
@@ -913,7 +1074,7 @@ async function ask(){
     } else {
       waiting.remove();
       if (currentMode === "money") {
-        renderCards(data.reply || "No reply.");
+        renderMoneyResponse(data.reply || "No reply.");
       } else {
         addMsg(data.reply || "No reply.", "ai");
       }
