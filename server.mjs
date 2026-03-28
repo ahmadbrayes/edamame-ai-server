@@ -161,26 +161,6 @@ Do not skip the upload image line.
 Do not replace them with alternatives.
 Do not give only part of the structure.
 
-Do not over-explain.
-Do not add extra theory.
-Keep it direct and commercially useful.
-
-WHEN GENERATING IMAGES
-After generating the image, ALWAYS provide:
-
-1. A short line that says:
-"Here is your caption."
-
-2. A ready-to-post caption:
-- Short
-- Catchy
-- Includes emojis
-
-3. Hashtags:
-- 5 to 10 max
-
-Make it feel like a real Instagram post that can be copied and posted immediately.
-
 WHEN THE USER ASKS FOR CONTENT
 Focus on:
 - fast attention
@@ -340,7 +320,35 @@ function normalizeAspect(value) {
   return ALLOWED_ASPECTS.has(aspect) ? aspect : "4:5";
 }
 
+function looksLikeBusinessDescription(text) {
+  const t = String(text || "").trim().toLowerCase();
+  return (
+    t.startsWith("i sell ") ||
+    t.startsWith("we sell ") ||
+    t.startsWith("i have a ") ||
+    t.startsWith("we have a ") ||
+    t.startsWith("my business is ") ||
+    t.startsWith("i run a ") ||
+    t.startsWith("we run a ")
+  );
+}
+
+function isCaptionRequest(text) {
+  const t = String(text || "").trim().toLowerCase();
+  return (
+    t.includes("caption") ||
+    t.includes("write me a caption") ||
+    t.includes("write a caption") ||
+    t.includes("give me a caption") ||
+    t.includes("caption with hashtags") ||
+    t.includes("hashtags") ||
+    t.includes("write post caption")
+  );
+}
+
 function buildGeminiEditPrompt(userPrompt, aspect) {
+  const safeUserPrompt = String(userPrompt || "").trim() || "Make it look premium and social-media ready.";
+
   return `
 Edit this real product image carefully.
 
@@ -369,13 +377,64 @@ STYLE GOAL:
 - Commercial
 - Ad-ready
 - Realistic
+- Social media ready
 
 ASPECT RATIO:
 ${aspect}
 
 USER REQUEST:
-${userPrompt}
+${safeUserPrompt}
 `.trim();
+}
+
+async function generateCaptionFromStoredPrompt(sessionId) {
+  const imagePrompt = sessionMeta[sessionId]?.lastImagePrompt || "";
+  const businessType = sessionMeta[sessionId]?.businessType || "";
+
+  const promptContext = `
+The user already generated a product visual.
+
+Business context:
+${businessType || "Not provided"}
+
+Visual generation prompt:
+${imagePrompt || "Product marketing visual for social media"}
+
+Write a ready-to-post Instagram caption that matches this visual.
+
+RULES:
+- English only
+- Start with exactly: "Here is your caption."
+- Then write:
+Caption: ...
+CTA: ...
+Hashtags: ...
+- The caption must be short, catchy, and include emojis
+- The CTA must be direct
+- The hashtags must be 5 to 10 max
+- Make it feel ready to copy and post immediately
+`.trim();
+
+  const captionResponse = await openaiClient.responses.create({
+    model: "gpt-4.1-mini",
+    input: [
+      {
+        role: "system",
+        content: "You write high-converting Instagram captions for product visuals.",
+      },
+      {
+        role: "user",
+        content: promptContext,
+      },
+    ],
+    temperature: 0.9,
+    max_output_tokens: 300,
+  });
+
+  return (
+    String(captionResponse?.output_text || "").trim() ||
+    'Here is your caption.\n\nCaption: ✨ Ready to post.\nCTA: DM us now.\nHashtags: #brand #marketing #socialmedia'
+  );
 }
 
 /* =========================
@@ -435,7 +494,7 @@ app.post("/api/product", (req, res) => {
 });
 
 /* =========================
-   Chat / Strategy
+   Chat / Strategy / Caption requests
 ========================= */
 app.post("/api/chat", async (req, res) => {
   try {
@@ -450,6 +509,19 @@ app.post("/api/chat", async (req, res) => {
         error: "MESSAGE_REQUIRED",
         message: "Message is required.",
       });
+    }
+
+    if (looksLikeBusinessDescription(userMessage)) {
+      sessionMeta[sessionId] = {
+        ...(sessionMeta[sessionId] || {}),
+        businessType: userMessage,
+        lastSeen: Date.now(),
+      };
+    }
+
+    if (isCaptionRequest(userMessage) && sessionMeta[sessionId]?.lastImagePrompt) {
+      const reply = await generateCaptionFromStoredPrompt(sessionId);
+      return res.json({ reply, mode, usedStoredImagePrompt: true });
     }
 
     ensureConversation(sessionId, mode);
@@ -536,6 +608,13 @@ app.post("/api/image", async (req, res) => {
 
     const prompt = buildGeminiEditPrompt(userPrompt, requestedAspect);
 
+    sessionMeta[sessionId] = {
+      ...(sessionMeta[sessionId] || {}),
+      lastSeen: Date.now(),
+      lastImagePrompt: prompt,
+      lastImageUserRequest: userPrompt,
+    };
+
     const response = await googleClient.models.generateContent({
       model: "gemini-3-pro-image-preview",
       contents: [
@@ -581,6 +660,7 @@ app.post("/api/image", async (req, res) => {
 
     return res.json({
       b64: imageBase64,
+      helperMessage: "If you want, I can also write a caption with a CTA and hashtags.",
       aspect: requestedAspect,
       remainingToday: Math.max(0, DAILY_IMAGE_LIMIT - usage.count),
       provider: "gemini",
