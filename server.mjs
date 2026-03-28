@@ -657,6 +657,8 @@ app.post("/api/image", async (req, res) => {
     }
 
     usage.count += 1;
+     
+    delete productImageBySession[sessionId];
 
     return res.json({
       b64: imageBase64,
