@@ -371,6 +371,18 @@ function isCaptionRequest(text) {
   );
 }
 
+function isSimpleYes(text) {
+  const t = String(text || "").trim().toLowerCase();
+  return (
+    t === "ok" ||
+    t === "okay" ||
+    t === "yes" ||
+    t === "yep" ||
+    t === "sure" ||
+    t === "yalla"
+  );
+}
+
 function buildGeminiEditPrompt(userPrompt, aspect) {
   const safeUserPrompt =
     String(userPrompt || "").trim() ||
@@ -560,8 +572,7 @@ app.post("/api/reset", (req, res) => {
     delete productImageBySession[sessionId];
     delete sessionMeta[sessionId];
 
-    // intentionally keeping dailyUsage
-    // so daily image limit stays preserved
+    // keep dailyUsage so daily image limit does not reset
 
     return res.json({
       ok: true,
@@ -618,7 +629,10 @@ app.post("/api/chat", async (req, res) => {
 
     conversations[sessionId] = trimConversation(conversations[sessionId]);
 
-    if (isCaptionRequest(userMessage)) {
+    if (
+      isCaptionRequest(userMessage) ||
+      (isSimpleYes(userMessage) && sessionMeta[sessionId]?.lastImageUserRequest)
+    ) {
       const reply = await generateCaptionFromContext(sessionId, userMessage);
 
       conversations[sessionId].push({
@@ -628,7 +642,11 @@ app.post("/api/chat", async (req, res) => {
 
       conversations[sessionId] = trimConversation(conversations[sessionId]);
 
-      return res.json({ reply, mode, usedConversationContext: true });
+      return res.json({
+        reply,
+        mode,
+        usedConversationContext: true,
+      });
     }
 
     const response = await openaiClient.responses.create({
