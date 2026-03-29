@@ -329,7 +329,6 @@ body.money-mode .ai{
   color:#b30021;
 }
 
-/* Money Cards */
 .cards{
   display:flex;
   flex-direction:column;
@@ -366,7 +365,6 @@ body.money-mode .cardTitle{
   color:var(--money1);
 }
 
-/* Script UI */
 .scriptWrap{
   display:flex;
   flex-direction:column;
@@ -408,7 +406,6 @@ body.money-mode .scriptLabel{
   color:#dffff0;
 }
 
-/* Caption UI */
 .captionWrap{
   display:flex;
   flex-direction:column;
@@ -452,7 +449,6 @@ body.money-mode .captionTitle{
   color:#ffc14d;
 }
 
-/* Copy button */
 .copyBtn{
   margin-top:8px;
   padding:6px 10px;
@@ -714,9 +710,9 @@ let animationId = null;
 function slugify(text){
   return (text || "")
     .toLowerCase()
-    .replace(/[^a-z0-9\\s-]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
     .trim()
-    .replace(/\\s+/g, "-")
+    .replace(/\s+/g, "-")
     .slice(0, 50) || "image";
 }
 
@@ -780,7 +776,6 @@ function renderCaption(text){
   const hasCtaField = /^cta\s*:/im.test(safeText);
   const hasHashtagsField = /^hashtags\s*:/im.test(safeText);
 
-  // ✅ خليه strict
   const looksStructuredCaption =
     hasCaptionHeader ||
     hasCaptionField ||
@@ -800,9 +795,7 @@ function renderCaption(text){
     }
 
     const colonIndex = line.indexOf(":");
-    if (colonIndex === -1) {
-      return;
-    }
+    if (colonIndex === -1) return;
 
     const label = line.slice(0, colonIndex).trim().toLowerCase();
     const value = line.slice(colonIndex + 1).trim();
@@ -1175,12 +1168,12 @@ async function uploadProduct(file){
     try {
       const dataUrl = reader.result;
 
-      const r = await fetch("/api/product", {
+      const r = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId,
-          imageDataUrl: dataUrl
+          image: dataUrl
         })
       });
 
@@ -1307,7 +1300,6 @@ async function ask(){
         if (renderCaption(data.reply || "")) {
           captionRendered = true;
         } else if (renderScript(data.reply || "")) {
-          // script rendered
         } else {
           addMsg(data.reply || "No reply.", "ai");
         }
