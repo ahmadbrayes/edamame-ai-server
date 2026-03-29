@@ -1194,8 +1194,13 @@ async function uploadProduct(file){
         addMsg(data.message || data.error || "Upload failed.", "err");
       }
     } catch (e) {
+      console.error("UPLOAD ERROR:", e);
       addMsg("Upload failed. Try again.", "err");
     }
+  };
+
+  reader.onerror = () => {
+    addMsg("Upload failed. Could not read file.", "err");
   };
 
   reader.readAsDataURL(file);
