@@ -104,6 +104,18 @@ VOICE
 - Zero fluff
 - English only
 
+ENERGY
+- Think like an elite closer in a high-stakes sales room.
+- Fast.
+- Ruthless about weak ideas.
+- Hyper-persuasive.
+- Charismatic.
+- High-status.
+- Extremely clear.
+- Commercially aggressive without sounding sloppy.
+- Bold like someone who knows how to move attention, desire, urgency, and money.
+- Sound premium, dangerous to weak marketing, and obsessed with conversion.
+
 MISSION
 Turn products, services, offers, and content into revenue.
 
@@ -118,12 +130,17 @@ Always optimize for:
 
 HOW TO THINK
 - Think like a killer growth operator.
-- Think in revenue, conversion, demand, offer strength, and positioning.
+- Think in revenue, conversion, demand, offer strength, positioning, urgency, and buyer psychology.
 - Push the user toward what sells.
 - Reject weak ideas fast.
 - Improve vague ideas into commercial ideas.
 - If the user's content is weak, boring, unclear, or soft, say it clearly.
 - Never overpraise weak work.
+- Prioritize decisions that create action, leads, and cash.
+- Make the output feel like it came from a world-class sales brain with premium taste.
+- Cut hesitation.
+- Favor clarity over creativity when clarity makes more money.
+- Favor punch over politeness when punch sells better.
 
 RESPONSE STYLE
 - Short
@@ -133,8 +150,14 @@ RESPONSE STYLE
 - No rambling
 - No generic advice
 - No motivational filler
+- No soft language
+- No passive phrasing
+- No long explanations when a sharper answer will do
 
 IMPORTANT
+- Do not imitate or quote any real person or movie character.
+- Do not use recognizable movie lines or signature catchphrases.
+- Keep the energy original, commercially aggressive, and premium.
 - Do not assume the user always wants the same output format again and again.
 - If they switch categories or products, do not blindly continue the previous script format.
 - Adapt to the newest request.
@@ -177,6 +200,8 @@ Focus on:
 - lead generation
 - conversion
 - offer clarity
+- urgency
+- buyer desire
 
 WHEN THE USER ASKS FOR IDEAS
 - Do not dump too many
@@ -389,32 +414,54 @@ ${safeUserPrompt}
 `.trim();
 }
 
-async function generateCaptionFromStoredPrompt(sessionId) {
-  const imagePrompt = sessionMeta[sessionId]?.lastImagePrompt || "";
+async function generateCaptionFromContext(sessionId, userCaptionRequest = "") {
   const businessType = sessionMeta[sessionId]?.businessType || "";
+  const lastImageUserRequest = sessionMeta[sessionId]?.lastImageUserRequest || "";
+  const conversation = conversations[sessionId] || [];
+
+  const recentUserMessages = conversation
+    .filter((msg) => msg.role === "user")
+    .slice(-10)
+    .map((msg) => `- ${msg.content}`)
+    .join("\n");
 
   const promptContext = `
-The user already generated a product visual.
+Write a ready-to-post Instagram caption based on the user's business and what they said in the conversation.
 
-Business context:
+BUSINESS INFO:
 ${businessType || "Not provided"}
 
-Visual generation prompt:
-${imagePrompt || "Product marketing visual for social media"}
+RECENT USER MESSAGES:
+${recentUserMessages || "No recent messages"}
 
-Write a ready-to-post Instagram caption that matches this visual.
+LAST VISUAL REQUEST:
+${lastImageUserRequest || "Not provided"}
 
-RULES:
+USER'S CURRENT CAPTION REQUEST:
+${userCaptionRequest || "Write a caption"}
+
+IMPORTANT:
+- Base the caption on the user's actual business/product information
+- Do NOT describe the image generation prompt
+- Do NOT talk about backgrounds, angles, composition, lighting, aspect ratio, or visual editing instructions
+- If the business info is limited, write a clean general caption based on the available product/service context
 - English only
-- Start with exactly: "Here is your caption."
-- Then write:
+- Make it feel natural, commercial, and ready to post
+
+FORMAT:
+Start with exactly:
+Here is your caption.
+
+Then write exactly:
 Caption: ...
 CTA: ...
 Hashtags: ...
-- The caption must be short, catchy, and include emojis
-- The CTA must be direct
-- The hashtags must be 5 to 10 max
-- Make it feel ready to copy and post immediately
+
+RULES:
+- Caption should be short, catchy, and include emojis
+- CTA should be direct
+- Hashtags should be 5 to 10 max
+- Do not add anything outside this format
 `.trim();
 
   const captionResponse = await openaiClient.responses.create({
@@ -422,7 +469,8 @@ Hashtags: ...
     input: [
       {
         role: "system",
-        content: "You write high-converting Instagram captions for product visuals.",
+        content:
+          "You write high-converting Instagram captions based on business context and user intent.",
       },
       {
         role: "user",
@@ -546,23 +594,22 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
+    ensureConversation(sessionId, mode);
+
+    sessionMeta[sessionId] = {
+      ...(sessionMeta[sessionId] || {}),
+      lastSeen: Date.now(),
+      lastUserMessage: userMessage,
+    };
+
     if (looksLikeBusinessDescription(userMessage)) {
       sessionMeta[sessionId] = {
         ...(sessionMeta[sessionId] || {}),
         businessType: userMessage,
         lastSeen: Date.now(),
+        lastUserMessage: userMessage,
       };
     }
-
-    if (
-      isCaptionRequest(userMessage) &&
-      sessionMeta[sessionId]?.lastImagePrompt
-    ) {
-      const reply = await generateCaptionFromStoredPrompt(sessionId);
-      return res.json({ reply, mode, usedStoredImagePrompt: true });
-    }
-
-    ensureConversation(sessionId, mode);
 
     conversations[sessionId].push({
       role: "user",
@@ -570,6 +617,19 @@ app.post("/api/chat", async (req, res) => {
     });
 
     conversations[sessionId] = trimConversation(conversations[sessionId]);
+
+    if (isCaptionRequest(userMessage)) {
+      const reply = await generateCaptionFromContext(sessionId, userMessage);
+
+      conversations[sessionId].push({
+        role: "assistant",
+        content: reply,
+      });
+
+      conversations[sessionId] = trimConversation(conversations[sessionId]);
+
+      return res.json({ reply, mode, usedConversationContext: true });
+    }
 
     const response = await openaiClient.responses.create({
       model: "gpt-4.1-mini",
