@@ -779,10 +779,12 @@ function renderCaption(text){
   const hasCaptionField = /^caption\s*:/im.test(safeText);
   const hasCtaField = /^cta\s*:/im.test(safeText);
   const hasHashtagsField = /^hashtags\s*:/im.test(safeText);
-  const hasHashtagSymbol = /(^|\s)#\w+/m.test(safeText);
 
+  // ✅ خليه strict
   const looksStructuredCaption =
-    hasCaptionHeader || hasCaptionField || hasCtaField || hasHashtagsField || hasHashtagSymbol;
+    hasCaptionHeader ||
+    hasCaptionField ||
+    (hasCtaField && hasHashtagsField);
 
   if (!looksStructuredCaption) return false;
 
@@ -799,13 +801,6 @@ function renderCaption(text){
 
     const colonIndex = line.indexOf(":");
     if (colonIndex === -1) {
-      if (!captionText && !ctaText && !hashtagsText) {
-        captionText += (captionText ? "\n" : "") + line;
-      } else if (hashtagsText) {
-        hashtagsText += " " + line;
-      } else {
-        captionText += (captionText ? "\n" : "") + line;
-      }
       return;
     }
 
