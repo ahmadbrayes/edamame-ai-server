@@ -347,7 +347,9 @@ function isCaptionRequest(text) {
 }
 
 function buildGeminiEditPrompt(userPrompt, aspect) {
-  const safeUserPrompt = String(userPrompt || "").trim() || "Make it look premium and social-media ready.";
+  const safeUserPrompt =
+    String(userPrompt || "").trim() ||
+    "Make it look premium and social-media ready.";
 
   return `
 Edit this real product image carefully.
@@ -456,6 +458,51 @@ app.get("/health", (req, res) => {
 /* =========================
    Upload Product
 ========================= */
+app.post("/api/upload", async (req, res) => {
+  try {
+    const sessionId = getSessionId(req, res);
+    if (!sessionId) return;
+
+    const imageData = String(req.body?.image || "").trim();
+
+    if (!imageData) {
+      return res.status(400).json({
+        error: "IMAGE_REQUIRED",
+        message: "Image is required.",
+      });
+    }
+
+    const parsed = parseDataUrlToBuffer(imageData);
+    if (!parsed) {
+      return res.status(400).json({
+        error: "INVALID_IMAGE",
+        message: "Only PNG, JPG, JPEG, and WEBP are allowed.",
+      });
+    }
+
+    productImageBySession[sessionId] = imageData;
+
+    sessionMeta[sessionId] = {
+      ...(sessionMeta[sessionId] || {}),
+      lastSeen: Date.now(),
+    };
+
+    return res.json({
+      ok: true,
+      message: "Product image uploaded successfully.",
+    });
+  } catch (error) {
+    console.error("UPLOAD ERROR:", error);
+    return res.status(500).json({
+      error: "UPLOAD_ERROR",
+      message: String(error?.message || error),
+    });
+  }
+});
+
+/* =========================
+   Reset
+========================= */
 app.post("/api/reset", (req, res) => {
   try {
     const sessionId = getSessionId(req, res);
@@ -465,8 +512,8 @@ app.post("/api/reset", (req, res) => {
     delete productImageBySession[sessionId];
     delete sessionMeta[sessionId];
 
-    // مهم: لا تمسح dailyUsage
-    // حتى يضل عداد الصور اليومي كما هو
+    // intentionally keeping dailyUsage
+    // so daily image limit stays preserved
 
     return res.json({
       ok: true,
@@ -480,6 +527,7 @@ app.post("/api/reset", (req, res) => {
     });
   }
 });
+
 /* =========================
    Chat / Strategy / Caption requests
 ========================= */
@@ -506,7 +554,10 @@ app.post("/api/chat", async (req, res) => {
       };
     }
 
-    if (isCaptionRequest(userMessage) && sessionMeta[sessionId]?.lastImagePrompt) {
+    if (
+      isCaptionRequest(userMessage) &&
+      sessionMeta[sessionId]?.lastImagePrompt
+    ) {
       const reply = await generateCaptionFromStoredPrompt(sessionId);
       return res.json({ reply, mode, usedStoredImagePrompt: true });
     }
@@ -644,12 +695,13 @@ app.post("/api/image", async (req, res) => {
     }
 
     usage.count += 1;
-     
+
     delete productImageBySession[sessionId];
 
     return res.json({
       b64: imageBase64,
-      helperMessage: "If you want, I can also write a caption with a CTA and hashtags.",
+      helperMessage:
+        "If you want, I can also write a caption with a CTA and hashtags.",
       aspect: requestedAspect,
       remainingToday: Math.max(0, DAILY_IMAGE_LIMIT - usage.count),
       provider: "gemini",
@@ -659,32 +711,6 @@ app.post("/api/image", async (req, res) => {
     console.error("IMAGE ERROR:", error);
     return res.status(500).json({
       error: "IMAGE_ERROR",
-      message: String(error?.message || error),
-    });
-  }
-});
-
-/* =========================
-   Reset
-========================= */
-app.post("/api/reset", (req, res) => {
-  try {
-    const sessionId = getSessionId(req, res);
-    if (!sessionId) return;
-
-    delete conversations[sessionId];
-    delete productImageBySession[sessionId];
-    delete dailyUsage[sessionId];
-    delete sessionMeta[sessionId];
-
-    return res.json({
-      ok: true,
-      message: "Session reset successfully.",
-    });
-  } catch (error) {
-    console.error("RESET ERROR:", error);
-    return res.status(500).json({
-      error: "RESET_ERROR",
       message: String(error?.message || error),
     });
   }
